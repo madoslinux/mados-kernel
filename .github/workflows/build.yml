@@ -33,7 +33,9 @@ jobs:
             git \
             ccache \
             ncurses \
-            curl
+            curl \
+            clang \
+            lld
 
       - name: Clone zen-kernel source
         run: |
@@ -60,7 +62,7 @@ jobs:
       - name: Build kernel
         run: |
           cd /tmp/linux
-          make -j$(nproc) LLVM=0 CC=gcc AS=as LD=ld.bfd zstd 2>&1 | tail -100
+          make -j$(nproc) LLVM=1 CC=clang zstd 2>&1 | tail -100
 
       - name: Create package
         run: |

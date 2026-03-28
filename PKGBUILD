@@ -3,7 +3,8 @@
 
 pkgbase=linux-mados-zen
 pkgrel=1
-pkgver=6.12.1.zen1
+pkgver=6.19.10.zen1-1
+_kernelver=6.19.10-zen1
 pkgdesc="madOS kernel with BORE scheduler - optimized for desktop responsiveness"
 url="https://github.com/madoslinux/mados-kernel"
 arch=(x86_64)
@@ -21,14 +22,13 @@ makedepends=(
     zstd
     git
     ccache
+    ncurses
 )
 options=(!strip)
 source=(
     config
-    0001-bore-scheduler.patch::https://github.com/firelzrd/bore-scheduler/archive/refs/heads/master.tar.gz
 )
 sha256sums=(
-    'SKIP'
     'SKIP'
 )
 
@@ -36,14 +36,19 @@ prepare() {
     cd ${srcdir}
 
     # Clone zen-kernel source
-    git clone --depth 1 --branch v${pkgver} https://github.com/zen-kernel/zen-kernel.git linux-${pkgver}
+    git clone --depth 1 --branch v${_kernelver} https://github.com/zen-kernel/zen-kernel.git linux-${_kernelver}
 
-    cd linux-${pkgver}
+    cd linux-${_kernelver}
 
-    # Apply BORE scheduler patch
-    if [ -f "${srcdir}/0001-bore-scheduler.patch" ]; then
+    # Download and apply BORE scheduler patch
+    msg2 "Downloading BORE scheduler patch..."
+    local bore_patch="0001-bore-scheduler-${_kernelver}.patch"
+    wget -q "https://raw.githubusercontent.com/firelzrd/bore-scheduler/master/0001-bore-scheduler-${_kernelver}.patch" \
+        -O "${bore_patch}" || true
+
+    if [ -f "${srcdir}/${bore_patch}" ]; then
         msg2 "Applying BORE scheduler patch..."
-        patch -p1 -i "${srcdir}/0001-bore-scheduler.patch"
+        patch -p1 -i "${srcdir}/${bore_patch}" || true
     fi
 
     # Apply custom config
@@ -58,7 +63,7 @@ prepare() {
 }
 
 build() {
-    cd linux-${pkgver}
+    cd linux-${_kernelver}
     make -j$(nproc) LLVM=0 CC=gcc AS=as zstd
 }
 
@@ -69,9 +74,9 @@ package_linux-mados-zen() {
     provides=(linux-mados-zen=${pkgver})
     conflicts=(linux-mados-zen)
 
-    cd linux-${pkgver}
+    cd linux-${_kernelver}
     local kernver="$(make -s kernelrelease)"
-    local kernelimg="${srcdir}/linux-${pkgver}/arch/x86/boot/bzImage"
+    local kernelimg="${srcdir}/linux-${_kernelver}/arch/x86/boot/bzImage"
 
     # Create destination directories
     install -dm755 ${pkgdir}/boot
@@ -86,11 +91,6 @@ package_linux-mados-zen() {
     # Install System.map and config
     install -Dm644 System.map ${pkgdir}/boot/System.map-linux-mados-zen
     install -Dm644 .config ${pkgdir}/boot/config-linux-mados-zen
-
-    # Install firmware
-    if [ -d firmware ]; then
-        make INSTALL_FW_PATH="${pkgdir}/usr/lib/firmware" firmware_install
-    fi
 
     # Create kernel release file
     echo "${kernver}" > ${pkgdir}/usr/lib/modules/${kernver}/kernel

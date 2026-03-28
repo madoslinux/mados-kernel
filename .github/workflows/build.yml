@@ -31,34 +31,33 @@ jobs:
             xz \
             zstd \
             git \
-            ccache
+            ccache \
+            ncurses
 
       - name: Clone zen-kernel source
         env:
-          KERNEL_VERSION: 6.12.1.zen1
+          KERNEL_VERSION: 6.19.10-zen1
         run: |
           git clone --depth 1 --branch v${KERNEL_VERSION} https://github.com/zen-kernel/zen-kernel.git linux-${KERNEL_VERSION}
           cd linux-${KERNEL_VERSION}
-          git log --oneline -1
+          ls -la
 
       - name: Download BORE patch
         env:
-          KERNEL_VERSION: 6.12.1.zen1
+          KERNEL_VERSION: 6.19.10-zen1
         run: |
           cd linux-${KERNEL_VERSION}
-          wget -q https://github.com/firelzrd/bore-scheduler/releases/download/v${KERNEL_VERSION}/0001-bore-scheduler-${KERNEL_VERSION}.patch
-          ls -la *.patch 2>/dev/null || echo "Patch not found, will try alternative source"
+          wget -q "https://raw.githubusercontent.com/firelzrd/bore-scheduler/master/0001-bore-scheduler-${KERNEL_VERSION}.patch" \
+            -O bore.patch || true
+          ls -la *.patch 2>/dev/null || echo "No patch found"
 
       - name: Apply BORE patch
         env:
-          KERNEL_VERSION: 6.12.1.zen1
+          KERNEL_VERSION: 6.19.10-zen1
         run: |
           cd linux-${KERNEL_VERSION}
-          if [ -f 0001-bore-scheduler-${KERNEL_VERSION}.patch ]; then
-            patch -p1 -i 0001-bore-scheduler-${KERNEL_VERSION}.patch || echo "Patch application failed, continuing..."
-          else
-            echo "Downloading BORE from master branch..."
-            wget -q https://raw.githubusercontent.com/firelzrd/bore-scheduler/master/0001-bore-scheduler-${KERNEL_VERSION}.patch || true
+          if [ -f bore.patch ]; then
+            patch -p1 -i bore.patch || echo "Patch may already be applied or incompatible"
           fi
 
       - name: Apply config
@@ -80,24 +79,40 @@ jobs:
           cd linux-${KERNEL_VERSION}
           make -j$(nproc) LLVM=0 CC=gcc AS=as LD=ld.bfd zstd 2>&1 | tail -100
 
-      - name: Create package
+      - name: Create package directories
         env:
-          KERNEL_VERSION: 6.12.1.zen1
+          KERNEL_VERSION: 6.19.10-zen1
         run: |
           cd linux-${KERNEL_VERSION}
-          make INSTALL_MOD_PATH=/tmp/pkgdir modules_install
           mkdir -p /tmp/pkgdir/boot
+          mkdir -p /tmp/pkgdir/usr/lib/modules/$(make -s kernelrelease)
+
+      - name: Install kernel
+        env:
+          KERNEL_VERSION: 6.19.10-zen1
+        run: |
+          cd linux-${KERNEL_VERSION}
+          local kernver="$(make -s kernelrelease)"
+          
+          # Install kernel image
           install -Dm644 arch/x86/boot/bzImage /tmp/pkgdir/boot/vmlinuz-linux-mados-zen
+          
+          # Install modules
+          make INSTALL_MOD_PATH=/tmp/pkgdir modules_install
+          
+          # Install System.map and config
           install -Dm644 System.map /tmp/pkgdir/boot/System.map-linux-mados-zen
           install -Dm644 .config /tmp/pkgdir/boot/config-linux-mados-zen
           
-          cd /tmp/pkgdir
-          mkdir -p usr/lib/modules/$(make -s kernelrelease)
-          echo "$(make -s kernelrelease)" > usr/lib/modules/$(make -s kernelrelease)/kernel
+          # Create kernel release file
+          echo "${kernver}" > /tmp/pkgdir/usr/lib/modules/${kernver}/kernel
+          
+          ls -la /tmp/pkgdir/boot/
+          ls -la /tmp/pkgdir/usr/lib/modules/
 
       - name: Create tarball
         env:
-          KERNEL_VERSION: 6.12.1.zen1
+          KERNEL_VERSION: 6.19.10-zen1
         run: |
           cd /tmp/pkgdir
           tar -cvJf /tmp/linux-mados-zen-${KERNEL_VERSION}-x86_64.pkg.tar.xz *

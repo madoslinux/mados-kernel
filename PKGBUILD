@@ -3,8 +3,7 @@
 
 pkgbase=linux-mados-zen
 pkgrel=1
-_pkgver=6.12.1.zen1
-pkgver=${_pkgver}
+pkgver=6.12.1.zen1
 pkgdesc="madOS kernel with BORE scheduler - optimized for desktop responsiveness"
 url="https://github.com/madoslinux/mados-kernel"
 arch=(x86_64)
@@ -21,59 +20,45 @@ makedepends=(
     xz
     zstd
     git
+    ccache
 )
 options=(!strip)
 source=(
     config
-    0001-bore-scheduler.patch
+    0001-bore-scheduler.patch::https://github.com/firelzrd/bore-scheduler/archive/refs/heads/master.tar.gz
 )
 sha256sums=(
     'SKIP'
     'SKIP'
 )
 
-_kernelver=${pkgver}
-_extrapatches=()
-
 prepare() {
     cd ${srcdir}
 
-    # Clean previous builds
-    rm -rf build-${pkgver} 2>/dev/null || true
+    # Clone zen-kernel source
+    git clone --depth 1 --branch v${pkgver} https://github.com/zen-kernel/zen-kernel.git linux-${pkgver}
 
-    # Create build directory
-    mkdir -p build-${pkgver}
-    cd build-${pkgver}
+    cd linux-${pkgver}
 
-    # The source will be downloaded by makepkg internally from the _kernelver
-    # We use the Arch Linux ABS system to get the kernel source
-
-    msg2 "Setting up kernel source..."
-
-    # In a proper build environment, this would fetch from kernel.org
-    # For now, we assume the source is available or will be fetched
-}
-
-build() {
-    cd ${srcdir}/build-${pkgver}
-
-    # Copy our custom config
-    cp ${srcdir}/config .config
-
-    # Set localversion
-    sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"-mados-zen\"|g" .config
-    sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g" .config
-
-    # Apply BORE patch
+    # Apply BORE scheduler patch
     if [ -f "${srcdir}/0001-bore-scheduler.patch" ]; then
         msg2 "Applying BORE scheduler patch..."
         patch -p1 -i "${srcdir}/0001-bore-scheduler.patch"
     fi
 
+    # Apply custom config
+    cp "${srcdir}/config" .config
+
+    # Set localversion
+    sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"-mados-zen\"|g" .config
+    sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g" .config
+
     # Make olddefconfig to ensure all options are resolved
     make olddefconfig
+}
 
-    # Build with zstd compression
+build() {
+    cd linux-${pkgver}
     make -j$(nproc) LLVM=0 CC=gcc AS=as zstd
 }
 
@@ -83,11 +68,10 @@ package_linux-mados-zen() {
     optdepends=("linux-firmware: firmware images needed for some hardware")
     provides=(linux-mados-zen=${pkgver})
     conflicts=(linux-mados-zen)
-    replaces=(linux-zen)
 
-    cd ${srcdir}/build-${pkgver}
+    cd linux-${pkgver}
     local kernver="$(make -s kernelrelease)"
-    local kernelimg="${srcdir}/build-${pkgver}/arch/x86/boot/bzImage"
+    local kernelimg="${srcdir}/linux-${pkgver}/arch/x86/boot/bzImage"
 
     # Create destination directories
     install -dm755 ${pkgdir}/boot
@@ -103,13 +87,11 @@ package_linux-mados-zen() {
     install -Dm644 System.map ${pkgdir}/boot/System.map-linux-mados-zen
     install -Dm644 .config ${pkgdir}/boot/config-linux-mados-zen
 
-    # Install firmware (if available)
-    if [ -d ${srcdir}/build-${pkgver}/firmware ]; then
+    # Install firmware
+    if [ -d firmware ]; then
         make INSTALL_FW_PATH="${pkgdir}/usr/lib/firmware" firmware_install
     fi
 
     # Create kernel release file
     echo "${kernver}" > ${pkgdir}/usr/lib/modules/${kernver}/kernel
 }
-
-# vim: set ts=4 sts=4 sw=4 et:

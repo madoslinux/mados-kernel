@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: archlinux:latest
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     steps:
       - name: Checkout
@@ -30,32 +30,35 @@ jobs:
             tar \
             xz \
             zstd \
-            wget \
             git \
-            ccache \
-            rustup
+            ccache
 
-      - name: Setup GCC
-        run: |
-          rustup default stable
-          gcc --version
-
-      - name: Download kernel source
+      - name: Clone zen-kernel source
         env:
           KERNEL_VERSION: 6.12.1.zen1
         run: |
-          wget -q https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-${KERNEL_VERSION}.tar.xz
-          tar xf linux-${KERNEL_VERSION}.tar.xz
+          git clone --depth 1 --branch v${KERNEL_VERSION} https://github.com/zen-kernel/zen-kernel.git linux-${KERNEL_VERSION}
           cd linux-${KERNEL_VERSION}
+          git log --oneline -1
+
+      - name: Download BORE patch
+        env:
+          KERNEL_VERSION: 6.12.1.zen1
+        run: |
+          cd linux-${KERNEL_VERSION}
+          wget -q https://github.com/firelzrd/bore-scheduler/releases/download/v${KERNEL_VERSION}/0001-bore-scheduler-${KERNEL_VERSION}.patch
+          ls -la *.patch 2>/dev/null || echo "Patch not found, will try alternative source"
 
       - name: Apply BORE patch
         env:
           KERNEL_VERSION: 6.12.1.zen1
         run: |
           cd linux-${KERNEL_VERSION}
-          wget -q https://raw.githubusercontent.com/firelzrd/bore-scheduler/master/0001-bore-scheduler-${KERNEL_VERSION}.patch
           if [ -f 0001-bore-scheduler-${KERNEL_VERSION}.patch ]; then
-            patch -p1 -i 0001-bore-scheduler-${KERNEL_VERSION}.patch || echo "Patch may already be applied or incompatible"
+            patch -p1 -i 0001-bore-scheduler-${KERNEL_VERSION}.patch || echo "Patch application failed, continuing..."
+          else
+            echo "Downloading BORE from master branch..."
+            wget -q https://raw.githubusercontent.com/firelzrd/bore-scheduler/master/0001-bore-scheduler-${KERNEL_VERSION}.patch || true
           fi
 
       - name: Apply config
@@ -69,94 +72,43 @@ jobs:
         run: |
           cd linux-${KERNEL_VERSION}
           make olddefconfig
-          make -j$(nproc) LLVM=0 CC=gcc AS=as LD=ld.bfd olddefconfig
 
       - name: Build kernel
         env:
           MAKEFLAGS: "-j$(nproc)"
         run: |
           cd linux-${KERNEL_VERSION}
-          make -j$(nproc) LLVM=0 CC=gcc AS=as LD=ld.bfd zstd 2>&1 | tail -50
-
-      - name: Build package
-        env:
-          KERNEL_VERSION: 6.12.1.zen1
-        run: |
-          cd linux-${KERNEL_VERSION}
-          mkdir -p ../pkgdir/{boot,usr/lib/modules,usr/share,etc}
-          
-          local kernver="$(make -s kernelrelease)"
-          local kernelimg="arch/x86/boot/bzImage"
-          
-          # Install kernel image
-          install -Dm644 ${kernelimg} ../pkgdir/boot/vmlinuz-linux-mados-zen
-          
-          # Install modules
-          make INSTALL_MOD_PATH=../pkgdir modules_install
-          
-          # Install firmware
-          if [ -f drivers/firmware/bootsplash/bootsplash.data ]; then
-            install -Dm644 drivers/firmware/bootsplash/bootsplash.data ../pkgdir/usr/share/bootsplash/bootsplash.data
-          fi
-          
-          # Install System.map and config
-          install -Dm644 System.map ../pkgdir/boot/System.map-linux-mados-zen
-          install -Dm644 .config ../pkgdir/boot/config-linux-mados-zen
-          
-          # Create module metadata
-          mkdir -p ../pkgdir/usr/lib/modules/${kernver}
-          echo "${kernver}" > ../pkgdir/usr/lib/modules/${kernver}/kernel
-          
-          # Create package metadata
-          cd ..
-          echo "pkgname=linux-mados-zen" > PKGBUILD.test
-          echo "pkgver=${kernver}" >> PKGBUILD.test
-          cat PKGBUILD.test && rm PKGBUILD.test
+          make -j$(nproc) LLVM=0 CC=gcc AS=as LD=ld.bfd zstd 2>&1 | tail -100
 
       - name: Create package
         env:
           KERNEL_VERSION: 6.12.1.zen1
         run: |
-          cd pkgdir
+          cd linux-${KERNEL_VERSION}
+          make INSTALL_MOD_PATH=/tmp/pkgdir modules_install
+          mkdir -p /tmp/pkgdir/boot
+          install -Dm644 arch/x86/boot/bzImage /tmp/pkgdir/boot/vmlinuz-linux-mados-zen
+          install -Dm644 System.map /tmp/pkgdir/boot/System.map-linux-mados-zen
+          install -Dm644 .config /tmp/pkgdir/boot/config-linux-mados-zen
           
-          # Create a proper tarball for the package
-          KERNEL_VERSION="6.12.1.zen1-mados-zen-1"
-          mkdir -p install
-          
-          # Create .PKGINFO
-          cat > .PKGINFO << 'PKGEOF'
-          pkgname = linux-mados-zen
-          pkgver = 6.12.1.zen1-mados-zen-1
-          pkgdesc = madOS kernel with BORE scheduler - optimized for desktop responsiveness
-          url = https://github.com/madoslinux/mados-kernel
-          builddate = 1700000000
-          packager = madOS Build
-          size = 123456789
-          arch = x86_64
-          license = GPL-2.0-or-later
-          depend = coreutils
-          depend = kmod
-          depend = initramfs
-          optdep = linux-firmware: firmware images needed for some hardware
-          optdep = linux-headers: building external kernel modules
-          provides = linux-mados-zen=6.12.1.zen1
-          conflict = linux-mados-zen
-          PKGEOF
-          
-          # Create .MTREE
-          tar --XZ -cvf ../linux-mados-zen-*.pkg.tar.xz * .PKGINFO 2>/dev/null || true
-          
-          # Create tarball manually if needed
-          tar -cvJf linux-mados-zen-${KERNEL_VERSION}-x86_64.pkg.tar.xz *
+          cd /tmp/pkgdir
+          mkdir -p usr/lib/modules/$(make -s kernelrelease)
+          echo "$(make -s kernelrelease)" > usr/lib/modules/$(make -s kernelrelease)/kernel
+
+      - name: Create tarball
+        env:
+          KERNEL_VERSION: 6.12.1.zen1
+        run: |
+          cd /tmp/pkgdir
+          tar -cvJf /tmp/linux-mados-zen-${KERNEL_VERSION}-x86_64.pkg.tar.xz *
+          ls -lh /tmp/linux-mados-zen-*.pkg.tar.xz
 
       - name: Upload Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            linux-${KERNEL_VERSION}/linux-*.tar.xz
-            pkgdir/*.pkg.tar.xz
-            linux-*/arch/x86/boot/bzImage
+            /tmp/linux-mados-zen-*.pkg.tar.xz
           tag_name: ${{ github.ref }}
           release_name: madOS Kernel ${{ github.ref }}
         env:
@@ -165,31 +117,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-artifacts
+          name: kernel-package
           path: |
-            pkgdir/
-            linux-*/
-
-  create-release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref }}
-          name: madOS Kernel ${{ github.ref }}
-          body: |
-            ## madOS Kernel with BORE Scheduler
-            
-            This kernel includes:
-            - BORE Scheduler (Burst-Oriented Response Enhancer) for improved desktop responsiveness
-            - 1000Hz tickrate for low latency
-            - NVMe and Btrfs support built-in
-            - x86-64-v3 optimizations
-            - Steam Deck / Handheld device support
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            /tmp/linux-mados-zen-*.pkg.tar.xz

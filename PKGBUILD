@@ -1,11 +1,11 @@
-# madOS Kernel - linux-zen with BORE scheduler
+# madOS Kernel - linux-zen optimized
 # Maintainer: madOS Team
 
 pkgbase=linux-mados-zen
 pkgrel=1
 pkgver=6.19.10.zen1-1
 _kernelver=6.19.10-zen1
-pkgdesc="madOS kernel with BORE scheduler - optimized for desktop responsiveness"
+pkgdesc="madOS kernel optimized for desktop responsiveness with NVMe + Btrfs support"
 url="https://github.com/madoslinux/mados-kernel"
 arch=(x86_64)
 license=(GPL-2.0-or-later)
@@ -23,6 +23,10 @@ makedepends=(
     git
     ccache
     ncurses
+    clang
+    lld
+    llvm
+    binutils
 )
 options=(!strip)
 source=(
@@ -40,17 +44,6 @@ prepare() {
 
     cd linux-${_kernelver}
 
-    # Download and apply BORE scheduler patch
-    msg2 "Downloading BORE scheduler patch..."
-    local bore_patch="0001-bore-scheduler-${_kernelver}.patch"
-    wget -q "https://raw.githubusercontent.com/firelzrd/bore-scheduler/master/0001-bore-scheduler-${_kernelver}.patch" \
-        -O "${bore_patch}" || true
-
-    if [ -f "${srcdir}/${bore_patch}" ]; then
-        msg2 "Applying BORE scheduler patch..."
-        patch -p1 -i "${srcdir}/${bore_patch}" || true
-    fi
-
     # Apply custom config
     cp "${srcdir}/config" .config
 
@@ -59,16 +52,16 @@ prepare() {
     sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g" .config
 
     # Make olddefconfig to ensure all options are resolved
-    make olddefconfig
+    yes | make olddefconfig 2>/dev/null || true
 }
 
 build() {
     cd linux-${_kernelver}
-    make -j$(nproc) LLVM=0 CC=gcc AS=as zstd
+    make -j$(nproc) LLVM=1 CC=clang
 }
 
 package_linux-mados-zen() {
-    pkgdesc="madOS kernel with BORE scheduler - optimized for desktop responsiveness"
+    pkgdesc="madOS kernel optimized for desktop responsiveness with NVMe + Btrfs support"
     depends=(coreutils kmod initramfs)
     optdepends=("linux-firmware: firmware images needed for some hardware")
     provides=(linux-mados-zen=${pkgver})

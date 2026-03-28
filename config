@@ -1,6 +1,6 @@
 # madOS Kernel Configuration
-# Based on linux-zen defconfig + BORE scheduler + optimizations
-# Target: x86_64-v3, desktop responsiveness, NVMe + Btrfs support
+# Based on linux-zen defconfig with optimizations
+# Target: x86_64, desktop responsiveness, NVMe + Btrfs support
 
 CONFIG_LOCALVERSION="-mados-zen"
 CONFIG_LOCALVERSION_AUTO=n
@@ -34,12 +34,7 @@ CONFIG_RT_GROUP_SCHED=y
 CONFIG_SCHED=y
 CONFIG_SCHED_CORE=y
 
-# BORE Scheduler - Critical for desktop responsiveness
-CONFIG_SCHED_BORE=y
-CONFIG_SCHED_BORE_BURST=0
-CONFIG_SCHED_BORE_WAKEUP_BLACKLIST=y
-
-# Default EEVDF with latency tuning (BORE is patch-applied)
+# Default EEVDF with latency tuning (good for desktop)
 CONFIG_SCHED_OTHER=y
 CONFIG_SCHED_DEADLINE=y
 

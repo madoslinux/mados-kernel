@@ -45,17 +45,6 @@ jobs:
           cd /tmp/linux
           pwd && ls -la
 
-      - name: Download and apply BORE patch
-        run: |
-          cd /tmp/linux
-          # BORE patch for 6.19.x kernels
-          curl -sL "https://raw.githubusercontent.com/firelzrd/bore-scheduler/master/patches/stable/linux-6.19-bore/0001-linux6.19.7-bore-6.6.2.patch" -o bore.patch
-          if [ -f bore.patch ] && [ -s bore.patch ]; then
-            patch -p1 -i bore.patch || echo "Patch may already be applied"
-          else
-            echo "WARNING: BORE patch download failed, continuing without it"
-          fi
-
       - name: Configure kernel
         run: |
           cd /tmp/linux

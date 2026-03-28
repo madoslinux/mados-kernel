@@ -35,7 +35,9 @@ jobs:
             ncurses \
             curl \
             clang \
-            lld
+            lld \
+            llvm \
+            binutils
 
       - name: Clone zen-kernel source
         run: |

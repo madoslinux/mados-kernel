@@ -57,7 +57,7 @@ prepare() {
 
 build() {
     cd linux-${_kernelver}
-    make -j$(nproc) LLVM=1 CC=clang
+    make -j$(nproc) LLVM=1 CC=clang bzImage
 }
 
 package_linux-mados-zen() {

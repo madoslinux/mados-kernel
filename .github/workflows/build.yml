@@ -57,12 +57,12 @@ jobs:
           cp "${GITHUB_WORKSPACE}/config" .config
           sed -i 's|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION="-mados-zen"|g' .config
           sed -i 's|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g' .config
-          make olddefconfig
+          yes | make olddefconfig 2>/dev/null || true
 
       - name: Build kernel
         run: |
           cd /tmp/linux
-          make -j$(nproc) LLVM=1 CC=clang zstd 2>&1 | tail -100
+          make -j$(nproc) LLVM=1 CC=clang 2>&1 | tail -100
 
       - name: Create package
         run: |

@@ -42,17 +42,18 @@ jobs:
 
       - name: Clone zen-kernel source
         run: |
-          git clone --depth 1 --branch v6.19.10-zen1 https://github.com/zen-kernel/zen-kernel.git /tmp/linux
+          git clone --depth=1 --branch v6.19.10-zen1 https://github.com/zen-kernel/zen-kernel.git /tmp/linux
           cd /tmp/linux
           pwd && ls -la
 
       - name: Configure kernel
         run: |
           cd /tmp/linux
-          cp "${GITHUB_WORKSPACE}/config" .config
+          make x86_64_defconfig
           sed -i 's|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION="-mados-zen"|g' .config
           sed -i 's|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g' .config
-          yes | make olddefconfig 2>/dev/null || true
+          sed -i 's|CONFIG_DEBUG_INFO=.*|CONFIG_DEBUG_INFO=n|g' .config
+          make olddefconfig
 
       - name: Build kernel
         run: |

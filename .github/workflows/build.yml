@@ -86,7 +86,7 @@ jobs:
           files: |
             /tmp/linux-mados-zen-*.pkg.tar.xz
           tag_name: ${{ github.ref }}
-          release_name: madOS Kernel ${{ github.ref }}
+          name: madOS Kernel ${{ github.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -99,6 +99,19 @@ CONFIG_NTFS3_LZX_XPRESS=y
 CONFIG_FAT_DEFAULT_CODEPAGE=437
 CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
 
+# Loop device and snapshot support (needed by archiso)
+CONFIG_BLK_DEV_LOOP=m
+CONFIG_BLK_DEV_CDROM=m
+
+# Device mapper and snapshot (needed by archiso)
+CONFIG_BLK_DEV_DM=m
+CONFIG_DM_SNAPSHOT=m
+CONFIG_DM_MIRROR=m
+CONFIG_DM_ZERO=m
+
+# Overlay filesystem (needed by archiso for persistence)
+CONFIG_OVERLAY_FS=m
+
 # Network filesystems
 CONFIG_CIFS=y
 CONFIG_CIFS_ALLOW_INSECURE_LEGACY=y

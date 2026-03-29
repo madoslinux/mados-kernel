@@ -57,7 +57,7 @@ jobs:
       - name: Build kernel
         run: |
           cd /tmp/linux
-          make -j$(nproc) LLVM=1 CC=clang bzImage 2>&1 | tail -100
+          make -j$(nproc) LLVM=1 CC=clang bzImage modules 2>&1 | tail -100
 
       - name: Create package
         run: |

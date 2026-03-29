@@ -53,6 +53,23 @@ jobs:
           sed -i 's|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION="-mados-zen"|g' .config
           sed -i 's|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g' .config
           sed -i 's|CONFIG_DEBUG_INFO=.*|CONFIG_DEBUG_INFO=n|g' .config
+
+          # Enable common network drivers as built-in (not modules)
+          sed -i 's|CONFIG_R8169=m|CONFIG_R8169=y|g' .config
+          sed -i 's|CONFIG_E1000=m|CONFIG_E1000=y|g' .config
+          sed -i 's|CONFIG_E1000E=m|CONFIG_E1000E=y|g' .config
+          sed -i 's|CONFIG_IGB=m|CONFIG_IGB=y|g' .config
+          sed -i 's|CONFIG_IXGBE=m|CONFIG_IXGBE=y|g' .config
+          sed -i 's|CONFIG_VIRTIO_NET=m|CONFIG_VIRTIO_NET=y|g' .config
+          sed -i 's|CONFIG_VIRTIO_PCI=m|CONFIG_VIRTIO_PCI=y|g' .config
+          sed -i 's|CONFIG_USB_NET=m|CONFIG_USB_NET=y|g' .config
+          sed -i 's|CONFIG_USB_RTL8150=m|CONFIG_USB_RTL8150=y|g' .config
+          sed -i 's|CONFIG_USB_RTL8152=m|CONFIG_USB_RTL8152=y|g' .config
+          sed -i 's|CONFIG_USB_NET_DRIVERS=m|CONFIG_USB_NET_DRIVERS=y|g' .config
+
+          # Enable ZRAM as built-in
+          sed -i 's|CONFIG_ZRAM=m|CONFIG_ZRAM=y|g' .config
+
           make olddefconfig
 
       - name: Build kernel

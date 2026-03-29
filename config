@@ -101,7 +101,12 @@ CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
 
 # Loop device and snapshot support (needed by archiso)
 CONFIG_BLK_DEV_LOOP=m
-CONFIG_BLK_DEV_CDROM=m
+# IDE/PIIX support for CD-ROM in QEMU
+CONFIG_ATA=y
+CONFIG_ATA_PIIX=y
+CONFIG_ATA_GENERIC=y
+CONFIG_SATA_AHCI=y
+CONFIG_BLK_DEV_CDROM=y
 
 # Device mapper and snapshot (needed by archiso)
 CONFIG_BLK_DEV_DM=m

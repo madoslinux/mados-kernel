@@ -38,44 +38,46 @@ jobs:
             clang \
             lld \
             llvm \
-            binutils \
-            libisl \
-            m4 \
-            file \
-            texinfo \
-            gawk
+            binutils
 
-      - name: Build kernel package
+      - name: Clone zen-kernel source
         run: |
-          set -e
-          cd /tmp
+          git clone --depth 1 --branch v6.19.10-zen1 https://github.com/zen-kernel/zen-kernel.git /tmp/linux
+          cd /tmp/linux
+          pwd && ls -la
 
-          git clone --depth 1 --branch v6.19.10-zen1 https://github.com/zen-kernel/zen-kernel.git linux-src
-          cd linux-src
-
-          cp /home/runner/work/mados-kernel/mados-kernel/config .config
+      - name: Configure kernel
+        run: |
+          cd /tmp/linux
+          cp "${GITHUB_WORKSPACE}/config" .config
           sed -i 's|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION="-mados-zen"|g' .config
           sed -i 's|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g' .config
           yes | make olddefconfig 2>/dev/null || true
 
-          make -j$(nproc) LLVM=1 CC=clang bzImage 2>&1 | tail -20
+      - name: Build kernel
+        run: |
+          cd /tmp/linux
+          make -j$(nproc) LLVM=1 CC=clang bzImage 2>&1 | tail -100
 
+      - name: Create package
+        run: |
+          cd /tmp/linux
           kernver="$(make -s kernelrelease)"
           echo "Kernel version: ${kernver}"
 
-          mkdir -p pkgdest/boot
-          mkdir -p pkgdest/usr/lib/modules/${kernver}
+          mkdir -p /tmp/pkgdir/boot
+          mkdir -p "/tmp/pkgdir/usr/lib/modules/${kernver}"
 
-          install -Dm644 arch/x86/boot/bzImage pkgdest/boot/vmlinuz-linux-mados-zen
-          make INSTALL_MOD_PATH=pkgdest modules_install
-          install -Dm644 System.map pkgdest/boot/System.map-linux-mados-zen
-          install -Dm644 .config pkgdest/boot/config-linux-mados-zen
-          echo "${kernver}" > pkgdest/usr/lib/modules/${kernver}/kernel
+          install -Dm644 arch/x86/boot/bzImage /tmp/pkgdir/boot/vmlinuz-linux-mados-zen
+          make INSTALL_MOD_PATH=/tmp/pkgdir modules_install
+          install -Dm644 System.map /tmp/pkgdir/boot/System.map-linux-mados-zen
+          install -Dm644 .config /tmp/pkgdir/boot/config-linux-mados-zen
+          echo "${kernver}" > "/tmp/pkgdir/usr/lib/modules/${kernver}/kernel"
 
-          cd /tmp
-          tar -cvJf linux-mados-zen-6.19.10-zen1-x86_64.pkg.tar.xz -C linux-src .config System.map arch/x86/boot/bzImage
-          tar -cvJf linux-mados-zen-6.19.10-zen1-x86_64.pkg.tar.xz pkgdest/boot pkgdest/usr
-
+      - name: Create tarball
+        run: |
+          cd /tmp/pkgdir
+          tar -cvJf /tmp/linux-mados-zen-6.19.10-zen1-x86_64.pkg.tar.xz *
           ls -lh /tmp/linux-mados-zen-*.pkg.tar.xz
 
       - name: Upload Release

@@ -88,3 +88,33 @@ package_linux-mados-zen() {
     # Create kernel release file
     echo "${kernver}" > ${pkgdir}/usr/lib/modules/${kernver}/kernel
 }
+
+package_linux-mados-zen-headers() {
+    pkgdesc="madOS kernel headers for compiling external modules"
+    depends=()
+    provides=(linux-mados-zen-headers=${pkgver})
+    conflicts=(linux-mados-zen-headers)
+
+    cd linux-${_kernelver}
+    local kernver="$(make -s kernelrelease)"
+
+    # Create destination directories
+    install -dm755 ${pkgdir}/usr/lib/modules/${kernver}
+    install -dm755 ${pkgdir}/usr/src/
+
+    # Copy headers source tree
+    cp -r ${srcdir}/linux-${_kernelver}/include ${pkgdir}/usr/src/linux-${kernver}/
+    cp -r ${srcdir}/linux-${_kernelver}/arch/x86/include ${pkgdir}/usr/src/linux-${kernver}/arch/x86/
+    cp -r ${srcdir}/linux-${_kernelver}/scripts ${pkgdir}/usr/src/linux-${kernver}/
+
+    # Copy build files
+    cp ${srcdir}/linux-${_kernelver}/Makefile ${pkgdir}/usr/src/linux-${kernver}/ 2>/dev/null || true
+    cp ${srcdir}/linux-${_kernelver}/Module.symvers ${pkgdir}/usr/src/linux-${kernver}/ 2>/dev/null || true
+
+    # Install generated headers and config
+    install -Dm644 .config ${pkgdir}/usr/src/linux-${kernver}/.config
+    install -Dm644 System.map ${pkgdir}/usr/src/linux-${kernver}/System.map
+
+    # Create build symlink for kernel module compilation
+    ln -s /usr/src/linux-${kernver} ${pkgdir}/usr/lib/modules/${kernver}/build
+}

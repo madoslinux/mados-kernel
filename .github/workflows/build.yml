@@ -119,6 +119,14 @@ jobs:
 
           make olddefconfig
 
+          # Apply sed again after olddefconfig - it recreates some configs that were initially missing
+          sed -i 's|^# CONFIG_SQUASHFS_ZSTD is not set$|CONFIG_SQUASHFS_ZSTD=y|gm' .config
+          sed -i 's|^CONFIG_SQUASHFS_ZSTD=.*$|CONFIG_SQUASHFS_ZSTD=y|gm' .config
+          sed -i 's|^# CONFIG_ZSTD_DECOMPRESS is not set$|CONFIG_ZSTD_DECOMPRESS=y|gm' .config
+          sed -i 's|^CONFIG_ZSTD_DECOMPRESS=.*$|CONFIG_ZSTD_DECOMPRESS=y|gm' .config
+          sed -i 's|^# CONFIG_BTRFS_FS is not set$|CONFIG_BTRFS_FS=y|gm' .config
+          sed -i 's|^CONFIG_BTRFS_FS=.*$|CONFIG_BTRFS_FS=y|gm' .config
+
       - name: Build kernel
         run: |
           cd /tmp/linux

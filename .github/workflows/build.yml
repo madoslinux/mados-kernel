@@ -52,37 +52,37 @@ jobs:
           make x86_64_defconfig
           sed -i 's|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION="-mados-zen"|g' .config
           sed -i 's|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g' .config
-          sed -i 's|CONFIG_DEBUG_INFO=.*|CONFIG_DEBUG_INFO=n|g' .config
+          sed -i 's|^CONFIG_DEBUG_INFO=.*|CONFIG_DEBUG_INFO=n|g' .config
 
           # Enable common network drivers as built-in (not modules)
-          sed -i 's|CONFIG_R8169=m|CONFIG_R8169=y|g' .config
-          sed -i 's|CONFIG_E1000=m|CONFIG_E1000=y|g' .config
-          sed -i 's|CONFIG_E1000E=m|CONFIG_E1000E=y|g' .config
-          sed -i 's|CONFIG_IGB=m|CONFIG_IGB=y|g' .config
-          sed -i 's|CONFIG_IXGBE=m|CONFIG_IXGBE=y|g' .config
-          sed -i 's|CONFIG_VIRTIO_NET=m|CONFIG_VIRTIO_NET=y|g' .config
-          sed -i 's|CONFIG_VIRTIO_PCI=m|CONFIG_VIRTIO_PCI=y|g' .config
-          sed -i 's|CONFIG_USB_NET=m|CONFIG_USB_NET=y|g' .config
-          sed -i 's|CONFIG_USB_RTL8150=m|CONFIG_USB_RTL8150=y|g' .config
-          sed -i 's|CONFIG_USB_RTL8152=m|CONFIG_USB_RTL8152=y|g' .config
-          sed -i 's|CONFIG_USB_NET_DRIVERS=m|CONFIG_USB_NET_DRIVERS=y|g' .config
+          sed -i 's|^CONFIG_R8169=m|CONFIG_R8169=y|g' .config
+          sed -i 's|^CONFIG_E1000=m|CONFIG_E1000=y|g' .config
+          sed -i 's|^CONFIG_E1000E=m|CONFIG_E1000E=y|g' .config
+          sed -i 's|^CONFIG_IGB=m|CONFIG_IGB=y|g' .config
+          sed -i 's|^CONFIG_IXGBE=m|CONFIG_IXGBE=y|g' .config
+          sed -i 's|^CONFIG_VIRTIO_NET=m|CONFIG_VIRTIO_NET=y|g' .config
+          sed -i 's|^CONFIG_VIRTIO_PCI=m|CONFIG_VIRTIO_PCI=y|g' .config
+          sed -i 's|^CONFIG_USB_NET=m|CONFIG_USB_NET=y|g' .config
+          sed -i 's|^CONFIG_USB_RTL8150=m|CONFIG_USB_RTL8150=y|g' .config
+          sed -i 's|^CONFIG_USB_RTL8152=m|CONFIG_USB_RTL8152=y|g' .config
+          sed -i 's|^CONFIG_USB_NET_DRIVERS=m|CONFIG_USB_NET_DRIVERS=y|g' .config
 
-          # Enable ZRAM as built-in
-          if ! grep -q "CONFIG_ZRAM=" .config; then
+          # Enable ZRAM as built-in (check for uncommented line)
+          if ! grep -q "^CONFIG_ZRAM=" .config; then
               echo "CONFIG_ZRAM=y" >> .config
           else
-              sed -i 's|CONFIG_ZRAM=m|CONFIG_ZRAM=y|g' .config
+              sed -i 's|^CONFIG_ZRAM=m|CONFIG_ZRAM=y|g' .config
           fi
 
           # Enable overlay FS (for Docker/containers) and its dependencies
-          if ! grep -q "CONFIG_OVERLAY_FS=" .config; then
+          if ! grep -q "^CONFIG_OVERLAY_FS=" .config; then
               echo "CONFIG_OVERLAY_FS=y" >> .config
           else
-              sed -i 's|CONFIG_OVERLAY_FS=m|CONFIG_OVERLAY_FS=y|g' .config
+              sed -i 's|^CONFIG_OVERLAY_FS=m|CONFIG_OVERLAY_FS=y|g' .config
           fi
 
           # Add SQUASHFS and filesystem support if not present (needed for live boot)
-          if ! grep -q "CONFIG_SQUASHFS=" .config; then
+          if ! grep -q "^CONFIG_SQUASHFS=" .config; then
               echo "CONFIG_SQUASHFS=y" >> .config
               echo "CONFIG_SQUASHFS_DECOMP_MULTI=y" >> .config
               echo "CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y" >> .config
@@ -91,23 +91,23 @@ jobs:
               echo "CONFIG_JOLIET=y" >> .config
               echo "CONFIG_SQUASHFS_ZSTD=y" >> .config
           else
-              sed -i 's|CONFIG_SQUASHFS=.*|CONFIG_SQUASHFS=y|g' .config
-              sed -i 's|CONFIG_SQUASHFS_FILE_CACHE=.*|CONFIG_SQUASHFS_FILE_CACHE=y|g' .config
-              sed -i 's|CONFIG_SQUASHFS_DECOMP_MULTI=.*|CONFIG_SQUASHFS_DECOMP_MULTI=y|g' .config
-              sed -i 's|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=.*|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|g' .config
-              sed -i 's|CONFIG_XZ_DECOMPRESS=.*|CONFIG_XZ_DECOMPRESS=y|g' .config
-              sed -i 's|CONFIG_ISO9660_FS=.*|CONFIG_ISO9660_FS=y|g' .config
-              sed -i 's|CONFIG_JOLIET=.*|CONFIG_JOLIET=y|g' .config
-              sed -i 's|CONFIG_SQUASHFS_ZSTD=.*|CONFIG_SQUASHFS_ZSTD=y|g' .config
+              sed -i 's|^CONFIG_SQUASHFS=.*|CONFIG_SQUASHFS=y|g' .config
+              sed -i 's|^CONFIG_SQUASHFS_FILE_CACHE=.*|CONFIG_SQUASHFS_FILE_CACHE=y|g' .config
+              sed -i 's|^CONFIG_SQUASHFS_DECOMP_MULTI=.*|CONFIG_SQUASHFS_DECOMP_MULTI=y|g' .config
+              sed -i 's|^CONFIG_SQUASHFS_CHOICE_DECOMPRESS=.*|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|g' .config
+              sed -i 's|^CONFIG_XZ_DECOMPRESS=.*|CONFIG_XZ_DECOMPRESS=y|g' .config
+              sed -i 's|^CONFIG_ISO9660_FS=.*|CONFIG_ISO9660_FS=y|g' .config
+              sed -i 's|^CONFIG_JOLIET=.*|CONFIG_JOLIET=y|g' .config
+              sed -i 's|^CONFIG_SQUASHFS_ZSTD=.*|CONFIG_SQUASHFS_ZSTD=y|g' .config
           fi
 
           # Enable Btrfs for installer (subvolumes, snapshots)
-          if ! grep -q "CONFIG_BTRFS_FS=" .config; then
+          if ! grep -q "^CONFIG_BTRFS_FS=" .config; then
               echo "CONFIG_BTRFS_FS=y" >> .config
               echo "CONFIG_BTRFS_FS_POSIX_ACL=y" >> .config
               echo "CONFIG_BTRFS_DEBUG=y" >> .config
           else
-              sed -i 's|CONFIG_BTRFS_FS=.*|CONFIG_BTRFS_FS=y|g' .config
+              sed -i 's|^CONFIG_BTRFS_FS=.*|CONFIG_BTRFS_FS=y|g' .config
           fi
 
           make olddefconfig

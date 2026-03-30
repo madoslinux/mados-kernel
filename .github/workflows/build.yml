@@ -71,7 +71,11 @@ jobs:
           sed -i 's|CONFIG_ZRAM=m|CONFIG_ZRAM=y|g' .config
 
           # Enable overlay FS (for Docker/containers) and its dependencies
-          sed -i 's|CONFIG_OVERLAY_FS=m|CONFIG_OVERLAY_FS=y|g' .config
+          if ! grep -q "CONFIG_OVERLAY_FS=" .config; then
+              echo "CONFIG_OVERLAY_FS=y" >> .config
+          else
+              sed -i 's|CONFIG_OVERLAY_FS=m|CONFIG_OVERLAY_FS=y|g' .config
+          fi
 
           # Add SQUASHFS and filesystem support if not present (needed for live boot)
           if ! grep -q "CONFIG_SQUASHFS=" .config; then

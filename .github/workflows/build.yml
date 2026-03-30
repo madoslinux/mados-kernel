@@ -101,6 +101,15 @@ jobs:
               sed -i 's|CONFIG_SQUASHFS_ZSTD=.*|CONFIG_SQUASHFS_ZSTD=y|g' .config
           fi
 
+          # Enable Btrfs for installer (subvolumes, snapshots)
+          if ! grep -q "CONFIG_BTRFS_FS=" .config; then
+              echo "CONFIG_BTRFS_FS=y" >> .config
+              echo "CONFIG_BTRFS_FS_POSIX_ACL=y" >> .config
+              echo "CONFIG_BTRFS_DEBUG=y" >> .config
+          else
+              sed -i 's|CONFIG_BTRFS_FS=.*|CONFIG_BTRFS_FS=y|g' .config
+          fi
+
           make olddefconfig
 
       - name: Build kernel

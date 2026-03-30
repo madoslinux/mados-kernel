@@ -125,6 +125,10 @@ jobs:
           sed -i 's|^# CONFIG_BTRFS_FS_POSIX_ACL is not set$|CONFIG_BTRFS_FS_POSIX_ACL=y|gm' .config
           sed -i 's|^CONFIG_BTRFS_FS_POSIX_ACL=.*$|CONFIG_BTRFS_FS_POSIX_ACL=y|gm' .config
 
+          # DM_SNAPSHOT (mkinitcpio archiso hooks require this as a module)
+          sed -i 's|^# CONFIG_DM_SNAPSHOT is not set$|CONFIG_DM_SNAPSHOT=m|gm' .config
+          sed -i 's|^CONFIG_DM_SNAPSHOT=.*$|CONFIG_DM_SNAPSHOT=m|gm' .config
+
           make olddefconfig
 
           # Apply sed again after olddefconfig - it recreates some configs that were initially missing
@@ -136,6 +140,8 @@ jobs:
           sed -i 's|^CONFIG_BTRFS_FS=.*$|CONFIG_BTRFS_FS=y|gm' .config
           sed -i 's|^# CONFIG_SECURITY_LANDLOCK is not set$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
           sed -i 's|^CONFIG_SECURITY_LANDLOCK=.*$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
+          sed -i 's|^# CONFIG_DM_SNAPSHOT is not set$|CONFIG_DM_SNAPSHOT=m|gm' .config
+          sed -i 's|^CONFIG_DM_SNAPSHOT=.*$|CONFIG_DM_SNAPSHOT=m|gm' .config
 
       - name: Build kernel
         run: |

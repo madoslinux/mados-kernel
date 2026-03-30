@@ -115,6 +115,10 @@ jobs:
           sed -i 's|^# CONFIG_BPF_LSM is not set$|CONFIG_BPF_LSM=y|gm' .config
           sed -i 's|^CONFIG_BPF_LSM=.*$|CONFIG_BPF_LSM=y|gm' .config
 
+          # LANDLOCK (filesystem sandboxing - required by systemd)
+          sed -i 's|^# CONFIG_SECURITY_LANDLOCK is not set$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
+          sed -i 's|^CONFIG_SECURITY_LANDLOCK=.*$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
+
           # BTRFS (installer)
           sed -i 's|^# CONFIG_BTRFS_FS is not set$|CONFIG_BTRFS_FS=y|gm' .config
           sed -i 's|^CONFIG_BTRFS_FS=.*$|CONFIG_BTRFS_FS=y|gm' .config
@@ -130,6 +134,8 @@ jobs:
           sed -i 's|^CONFIG_ZSTD_DECOMPRESS=.*$|CONFIG_ZSTD_DECOMPRESS=y|gm' .config
           sed -i 's|^# CONFIG_BTRFS_FS is not set$|CONFIG_BTRFS_FS=y|gm' .config
           sed -i 's|^CONFIG_BTRFS_FS=.*$|CONFIG_BTRFS_FS=y|gm' .config
+          sed -i 's|^# CONFIG_SECURITY_LANDLOCK is not set$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
+          sed -i 's|^CONFIG_SECURITY_LANDLOCK=.*$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
 
       - name: Build kernel
         run: |

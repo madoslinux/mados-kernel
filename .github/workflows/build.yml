@@ -67,7 +67,19 @@ jobs:
           sed -i 's|^CONFIG_USB_RTL8152=m|CONFIG_USB_RTL8152=y|g' .config
           sed -i 's|^CONFIG_USB_NET_DRIVERS=m|CONFIG_USB_NET_DRIVERS=y|g' .config
 
-          # Enable ZRAM as built-in (check for uncommented line)
+          # First, replace any commented "is not set" lines with =y
+          sed -i 's|^# CONFIG_ZRAM is not set|CONFIG_ZRAM=y|g' .config
+          sed -i 's|^# CONFIG_OVERLAY_FS is not set|CONFIG_OVERLAY_FS=y|g' .config
+          sed -i 's|^# CONFIG_SQUASHFS is not set|CONFIG_SQUASHFS=y|g' .config
+          sed -i 's|^# CONFIG_BTRFS_FS is not set|CONFIG_BTRFS_FS=y|g' .config
+          sed -i 's|^# CONFIG_SQUASHFS_DECOMP_MULTI is not set|CONFIG_SQUASHFS_DECOMP_MULTI=y|g' .config
+          sed -i 's|^# CONFIG_SQUASHFS_CHOICE_DECOMPRESS is not set|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|g' .config
+          sed -i 's|^# CONFIG_XZ_DECOMPRESS is not set|CONFIG_XZ_DECOMPRESS=y|g' .config
+          sed -i 's|^# CONFIG_ISO9660_FS is not set|CONFIG_ISO9660_FS=y|g' .config
+          sed -i 's|^# CONFIG_JOLIET is not set|CONFIG_JOLIET=y|g' .config
+          sed -i 's|^# CONFIG_SQUASHFS_ZSTD is not set|CONFIG_SQUASHFS_ZSTD=y|g' .config
+
+          # Enable ZRAM as built-in
           if ! grep -q "^CONFIG_ZRAM=" .config; then
               echo "CONFIG_ZRAM=y" >> .config
           else
@@ -105,7 +117,6 @@ jobs:
           if ! grep -q "^CONFIG_BTRFS_FS=" .config; then
               echo "CONFIG_BTRFS_FS=y" >> .config
               echo "CONFIG_BTRFS_FS_POSIX_ACL=y" >> .config
-              echo "CONFIG_BTRFS_DEBUG=y" >> .config
           else
               sed -i 's|^CONFIG_BTRFS_FS=.*|CONFIG_BTRFS_FS=y|g' .config
           fi

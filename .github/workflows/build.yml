@@ -52,78 +52,70 @@ jobs:
           make x86_64_defconfig
           sed -i 's|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION="-mados-zen"|g' .config
           sed -i 's|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g' .config
-          sed -i 's|^CONFIG_DEBUG_INFO=.*|CONFIG_DEBUG_INFO=n|g' .config
+          sed -i 's|CONFIG_DEBUG_INFO=.*|CONFIG_DEBUG_INFO=n|g' .config
 
-          # Enable common network drivers as built-in (not modules)
-          sed -i 's|^CONFIG_R8169=m|CONFIG_R8169=y|g' .config
-          sed -i 's|^CONFIG_E1000=m|CONFIG_E1000=y|g' .config
-          sed -i 's|^CONFIG_E1000E=m|CONFIG_E1000E=y|g' .config
-          sed -i 's|^CONFIG_IGB=m|CONFIG_IGB=y|g' .config
-          sed -i 's|^CONFIG_IXGBE=m|CONFIG_IXGBE=y|g' .config
-          sed -i 's|^CONFIG_VIRTIO_NET=m|CONFIG_VIRTIO_NET=y|g' .config
-          sed -i 's|^CONFIG_VIRTIO_PCI=m|CONFIG_VIRTIO_PCI=y|g' .config
-          sed -i 's|^CONFIG_USB_NET=m|CONFIG_USB_NET=y|g' .config
-          sed -i 's|^CONFIG_USB_RTL8150=m|CONFIG_USB_RTL8150=y|g' .config
-          sed -i 's|^CONFIG_USB_RTL8152=m|CONFIG_USB_RTL8152=y|g' .config
-          sed -i 's|^CONFIG_USB_NET_DRIVERS=m|CONFIG_USB_NET_DRIVERS=y|g' .config
+          # Replace any variation (commented or not) with =y - handles is not set, =m, =n, etc
+          # Network drivers
+          sed -i 's|^# CONFIG_R8169 is not set$|CONFIG_R8169=y|gm' .config
+          sed -i 's|^CONFIG_R8169=.*$|CONFIG_R8169=y|gm' .config
+          sed -i 's|^# CONFIG_E1000 is not set$|CONFIG_E1000=y|gm' .config
+          sed -i 's|^CONFIG_E1000=.*$|CONFIG_E1000=y|gm' .config
+          sed -i 's|^# CONFIG_E1000E is not set$|CONFIG_E1000E=y|gm' .config
+          sed -i 's|^CONFIG_E1000E=.*$|CONFIG_E1000E=y|gm' .config
+          sed -i 's|^# CONFIG_IGB is not set$|CONFIG_IGB=y|gm' .config
+          sed -i 's|^CONFIG_IGB=.*$|CONFIG_IGB=y|gm' .config
+          sed -i 's|^# CONFIG_IXGBE is not set$|CONFIG_IXGBE=y|gm' .config
+          sed -i 's|^CONFIG_IXGBE=.*$|CONFIG_IXGBE=y|gm' .config
+          sed -i 's|^# CONFIG_VIRTIO_NET is not set$|CONFIG_VIRTIO_NET=y|gm' .config
+          sed -i 's|^CONFIG_VIRTIO_NET=.*$|CONFIG_VIRTIO_NET=y|gm' .config
+          sed -i 's|^# CONFIG_VIRTIO_PCI is not set$|CONFIG_VIRTIO_PCI=y|gm' .config
+          sed -i 's|^CONFIG_VIRTIO_PCI=.*$|CONFIG_VIRTIO_PCI=y|gm' .config
+          sed -i 's|^# CONFIG_USB_NET is not set$|CONFIG_USB_NET=y|gm' .config
+          sed -i 's|^CONFIG_USB_NET=.*$|CONFIG_USB_NET=y|gm' .config
+          sed -i 's|^# CONFIG_USB_RTL8150 is not set$|CONFIG_USB_RTL8150=y|gm' .config
+          sed -i 's|^CONFIG_USB_RTL8150=.*$|CONFIG_USB_RTL8150=y|gm' .config
+          sed -i 's|^# CONFIG_USB_RTL8152 is not set$|CONFIG_USB_RTL8152=y|gm' .config
+          sed -i 's|^CONFIG_USB_RTL8152=.*$|CONFIG_USB_RTL8152=y|gm' .config
 
-          # First, replace any commented "is not set" lines with =y
-          sed -i 's|^# CONFIG_ZRAM is not set|CONFIG_ZRAM=y|g' .config
-          sed -i 's|^# CONFIG_OVERLAY_FS is not set|CONFIG_OVERLAY_FS=y|g' .config
-          sed -i 's|^# CONFIG_SQUASHFS is not set|CONFIG_SQUASHFS=y|g' .config
-          sed -i 's|^# CONFIG_BTRFS_FS is not set|CONFIG_BTRFS_FS=y|g' .config
-          sed -i 's|^# CONFIG_SQUASHFS_DECOMP_MULTI is not set|CONFIG_SQUASHFS_DECOMP_MULTI=y|g' .config
-          sed -i 's|^# CONFIG_SQUASHFS_CHOICE_DECOMPRESS is not set|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|g' .config
-          sed -i 's|^# CONFIG_XZ_DECOMPRESS is not set|CONFIG_XZ_DECOMPRESS=y|g' .config
-          sed -i 's|^# CONFIG_ISO9660_FS is not set|CONFIG_ISO9660_FS=y|g' .config
-          sed -i 's|^# CONFIG_JOLIET is not set|CONFIG_JOLIET=y|g' .config
-          sed -i 's|^# CONFIG_SQUASHFS_ZSTD is not set|CONFIG_SQUASHFS_ZSTD=y|g' .config
-          sed -i 's|^# CONFIG_CRYPTO_ZSTD is not set|CONFIG_CRYPTO_ZSTD=y|g' .config
-          sed -i 's|^# CONFIG_CRYPTO_ZSTD_COMMON is not set|CONFIG_CRYPTO_ZSTD_COMMON=y|g' .config
-          sed -i 's|^# CONFIG_ZSTD_DECOMPRESS is not set|CONFIG_ZSTD_DECOMPRESS=y|g' .config
+          # ZRAM
+          sed -i 's|^# CONFIG_ZRAM is not set$|CONFIG_ZRAM=y|gm' .config
+          sed -i 's|^CONFIG_ZRAM=.*$|CONFIG_ZRAM=y|gm' .config
 
-          # Enable ZRAM as built-in
-          if ! grep -q "^CONFIG_ZRAM=" .config; then
-              echo "CONFIG_ZRAM=y" >> .config
-          else
-              sed -i 's|^CONFIG_ZRAM=m|CONFIG_ZRAM=y|g' .config
-          fi
+          # OVERLAY_FS (Docker/containers)
+          sed -i 's|^# CONFIG_OVERLAY_FS is not set$|CONFIG_OVERLAY_FS=y|gm' .config
+          sed -i 's|^CONFIG_OVERLAY_FS=.*$|CONFIG_OVERLAY_FS=y|gm' .config
 
-          # Enable overlay FS (for Docker/containers) and its dependencies
-          if ! grep -q "^CONFIG_OVERLAY_FS=" .config; then
-              echo "CONFIG_OVERLAY_FS=y" >> .config
-          else
-              sed -i 's|^CONFIG_OVERLAY_FS=m|CONFIG_OVERLAY_FS=y|g' .config
-          fi
+          # SQUASHFS (live boot)
+          sed -i 's|^# CONFIG_SQUASHFS is not set$|CONFIG_SQUASHFS=y|gm' .config
+          sed -i 's|^CONFIG_SQUASHFS=.*$|CONFIG_SQUASHFS=y|gm' .config
+          sed -i 's|^# CONFIG_SQUASHFS_DECOMP_MULTI is not set$|CONFIG_SQUASHFS_DECOMP_MULTI=y|gm' .config
+          sed -i 's|^CONFIG_SQUASHFS_DECOMP_MULTI=.*$|CONFIG_SQUASHFS_DECOMP_MULTI=y|gm' .config
+          sed -i 's|^# CONFIG_SQUASHFS_CHOICE_DECOMPRESS is not set$|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|gm' .config
+          sed -i 's|^CONFIG_SQUASHFS_CHOICE_DECOMPRESS=.*$|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|gm' .config
+          sed -i 's|^# CONFIG_XZ_DECOMPRESS is not set$|CONFIG_XZ_DECOMPRESS=y|gm' .config
+          sed -i 's|^CONFIG_XZ_DECOMPRESS=.*$|CONFIG_XZ_DECOMPRESS=y|gm' .config
+          sed -i 's|^# CONFIG_ISO9660_FS is not set$|CONFIG_ISO9660_FS=y|gm' .config
+          sed -i 's|^CONFIG_ISO9660_FS=.*$|CONFIG_ISO9660_FS=y|gm' .config
+          sed -i 's|^# CONFIG_JOLIET is not set$|CONFIG_JOLIET=y|gm' .config
+          sed -i 's|^CONFIG_JOLIET=.*$|CONFIG_JOLIET=y|gm' .config
+          sed -i 's|^# CONFIG_SQUASHFS_ZSTD is not set$|CONFIG_SQUASHFS_ZSTD=y|gm' .config
+          sed -i 's|^CONFIG_SQUASHFS_ZSTD=.*$|CONFIG_SQUASHFS_ZSTD=y|gm' .config
 
-          # Add SQUASHFS and filesystem support if not present (needed for live boot)
-          if ! grep -q "^CONFIG_SQUASHFS=" .config; then
-              echo "CONFIG_SQUASHFS=y" >> .config
-              echo "CONFIG_SQUASHFS_DECOMP_MULTI=y" >> .config
-              echo "CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y" >> .config
-              echo "CONFIG_XZ_DECOMPRESS=y" >> .config
-              echo "CONFIG_ISO9660_FS=y" >> .config
-              echo "CONFIG_JOLIET=y" >> .config
-              echo "CONFIG_SQUASHFS_ZSTD=y" >> .config
-          else
-              sed -i 's|^CONFIG_SQUASHFS=.*|CONFIG_SQUASHFS=y|g' .config
-              sed -i 's|^CONFIG_SQUASHFS_FILE_CACHE=.*|CONFIG_SQUASHFS_FILE_CACHE=y|g' .config
-              sed -i 's|^CONFIG_SQUASHFS_DECOMP_MULTI=.*|CONFIG_SQUASHFS_DECOMP_MULTI=y|g' .config
-              sed -i 's|^CONFIG_SQUASHFS_CHOICE_DECOMPRESS=.*|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|g' .config
-              sed -i 's|^CONFIG_XZ_DECOMPRESS=.*|CONFIG_XZ_DECOMPRESS=y|g' .config
-              sed -i 's|^CONFIG_ISO9660_FS=.*|CONFIG_ISO9660_FS=y|g' .config
-              sed -i 's|^CONFIG_JOLIET=.*|CONFIG_JOLIET=y|g' .config
-              sed -i 's|^CONFIG_SQUASHFS_ZSTD=.*|CONFIG_SQUASHFS_ZSTD=y|g' .config
-              sed -i 's|^CONFIG_CRYPTO_ZSTD=.*|CONFIG_CRYPTO_ZSTD=y|g' .config
-          fi
+          # ZSTD (needed for squashfs zstd)
+          sed -i 's|^# CONFIG_CRYPTO_ZSTD is not set$|CONFIG_CRYPTO_ZSTD=y|gm' .config
+          sed -i 's|^CONFIG_CRYPTO_ZSTD=.*$|CONFIG_CRYPTO_ZSTD=y|gm' .config
+          sed -i 's|^# CONFIG_ZSTD_COMMON is not set$|CONFIG_ZSTD_COMMON=y|gm' .config
+          sed -i 's|^CONFIG_ZSTD_COMMON=.*$|CONFIG_ZSTD_COMMON=y|gm' .config
+          sed -i 's|^# CONFIG_ZSTD_DECOMPRESS is not set$|CONFIG_ZSTD_DECOMPRESS=y|gm' .config
+          sed -i 's|^CONFIG_ZSTD_DECOMPRESS=.*$|CONFIG_ZSTD_DECOMPRESS=y|gm' .config
+          sed -i 's|^# CONFIG_DECOMPRESS_ZSTD is not set$|CONFIG_DECOMPRESS_ZSTD=y|gm' .config
+          sed -i 's|^CONFIG_DECOMPRESS_ZSTD=.*$|CONFIG_DECOMPRESS_ZSTD=y|gm' .config
 
-          # Enable Btrfs for installer (subvolumes, snapshots)
-          if ! grep -q "^CONFIG_BTRFS_FS=" .config; then
-              echo "CONFIG_BTRFS_FS=y" >> .config
-              echo "CONFIG_BTRFS_FS_POSIX_ACL=y" >> .config
-          else
-              sed -i 's|^CONFIG_BTRFS_FS=.*|CONFIG_BTRFS_FS=y|g' .config
-          fi
+          # BTRFS (installer)
+          sed -i 's|^# CONFIG_BTRFS_FS is not set$|CONFIG_BTRFS_FS=y|gm' .config
+          sed -i 's|^CONFIG_BTRFS_FS=.*$|CONFIG_BTRFS_FS=y|gm' .config
+          sed -i 's|^# CONFIG_BTRFS_FS_POSIX_ACL is not set$|CONFIG_BTRFS_FS_POSIX_ACL=y|gm' .config
+          sed -i 's|^CONFIG_BTRFS_FS_POSIX_ACL=.*$|CONFIG_BTRFS_FS_POSIX_ACL=y|gm' .config
 
           make olddefconfig
 

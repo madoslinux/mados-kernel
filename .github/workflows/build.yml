@@ -68,7 +68,11 @@ jobs:
           sed -i 's|CONFIG_USB_NET_DRIVERS=m|CONFIG_USB_NET_DRIVERS=y|g' .config
 
           # Enable ZRAM as built-in
-          sed -i 's|CONFIG_ZRAM=m|CONFIG_ZRAM=y|g' .config
+          if ! grep -q "CONFIG_ZRAM=" .config; then
+              echo "CONFIG_ZRAM=y" >> .config
+          else
+              sed -i 's|CONFIG_ZRAM=m|CONFIG_ZRAM=y|g' .config
+          fi
 
           # Enable overlay FS (for Docker/containers) and its dependencies
           if ! grep -q "CONFIG_OVERLAY_FS=" .config; then

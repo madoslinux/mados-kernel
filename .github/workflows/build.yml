@@ -107,9 +107,13 @@ jobs:
           mkdir -p /tmp/headersdir/usr/lib/modules/${kernver}
           mkdir -p /tmp/headersdir/usr/src/
 
-          # Copy headers source tree
+          # Copy headers source tree (create parent dirs first)
+          mkdir -p /tmp/headersdir/usr/src/linux-${kernver}
           cp -r include /tmp/headersdir/usr/src/linux-${kernver}/
-          cp -r arch/x86/include /tmp/headersdir/usr/src/linux-${kernver}/arch/x86/
+
+          mkdir -p /tmp/headersdir/usr/src/linux-${kernver}/arch/x86
+          cp -r arch/x86/include /tmp/headersdir/usr/src/linux-${kernver}/arch/x86/ 2>/dev/null || true
+
           cp -r scripts /tmp/headersdir/usr/src/linux-${kernver}/
 
           # Copy build files

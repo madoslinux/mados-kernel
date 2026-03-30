@@ -72,14 +72,24 @@ jobs:
 
           # Enable overlay FS (for Docker/containers) and its dependencies
           sed -i 's|CONFIG_OVERLAY_FS=m|CONFIG_OVERLAY_FS=y|g' .config
-          sed -i 's|CONFIG_SQUASHFS=.*|CONFIG_SQUASHFS=y|g' .config
-          sed -i 's|CONFIG_SQUASHFS_FILE_CACHE=.*|CONFIG_SQUASHFS_FILE_CACHE=y|g' .config
-          sed -i 's|CONFIG_SQUASHFS_DECOMP_MULTI=.*|CONFIG_SQUASHFS_DECOMP_MULTI=y|g' .config
-          sed -i 's|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=.*|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|g' .config
-          sed -i 's|CONFIG_XZ_DECOMPRESS=.*|CONFIG_XZ_DECOMPRESS=y|g' .config
-          sed -i 's|CONFIG_ISO9660_FS=.*|CONFIG_ISO9660_FS=y|g' .config
-          sed -i 's|CONFIG_JOLIET=.*|CONFIG_JOLIET=y|g' .config
-          sed -i 's|CONFIG_UDF_FS=.*|CONFIG_UDF_FS=y|g' .config
+
+          # Add SQUASHFS and filesystem support if not present (needed for live boot)
+          if ! grep -q "CONFIG_SQUASHFS=" .config; then
+              echo "CONFIG_SQUASHFS=y" >> .config
+              echo "CONFIG_SQUASHFS_DECOMP_MULTI=y" >> .config
+              echo "CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y" >> .config
+              echo "CONFIG_XZ_DECOMPRESS=y" >> .config
+              echo "CONFIG_ISO9660_FS=y" >> .config
+              echo "CONFIG_JOLIET=y" >> .config
+          else
+              sed -i 's|CONFIG_SQUASHFS=.*|CONFIG_SQUASHFS=y|g' .config
+              sed -i 's|CONFIG_SQUASHFS_FILE_CACHE=.*|CONFIG_SQUASHFS_FILE_CACHE=y|g' .config
+              sed -i 's|CONFIG_SQUASHFS_DECOMP_MULTI=.*|CONFIG_SQUASHFS_DECOMP_MULTI=y|g' .config
+              sed -i 's|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=.*|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|g' .config
+              sed -i 's|CONFIG_XZ_DECOMPRESS=.*|CONFIG_XZ_DECOMPRESS=y|g' .config
+              sed -i 's|CONFIG_ISO9660_FS=.*|CONFIG_ISO9660_FS=y|g' .config
+              sed -i 's|CONFIG_JOLIET=.*|CONFIG_JOLIET=y|g' .config
+          fi
 
           make olddefconfig
 

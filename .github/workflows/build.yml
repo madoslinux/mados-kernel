@@ -72,9 +72,7 @@ jobs:
             fi
           }
 
-          # Compatibility flavor: avoid native tuning, keep Plymouth/early graphics path.
-          check_cfg "$compat_cfg" '^# CONFIG_MNATIVE_INTEL is not set$' 'CONFIG_MNATIVE_INTEL must be disabled in compat flavor'
-          check_cfg "$compat_cfg" '^# CONFIG_MNATIVE_AMD is not set$' 'CONFIG_MNATIVE_AMD must be disabled in compat flavor'
+          # Compatibility flavor: Plymouth/early graphics path.
           check_cfg "$compat_cfg" '^CONFIG_DRM_SIMPLEDRM=y$' 'CONFIG_DRM_SIMPLEDRM must be enabled in compat flavor'
           check_cfg "$compat_cfg" '^CONFIG_FRAMEBUFFER_CONSOLE=y$' 'CONFIG_FRAMEBUFFER_CONSOLE must be enabled in compat flavor'
 

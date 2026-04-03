@@ -131,8 +131,25 @@ jobs:
       - name: Smoke boot test (UEFI)
         run: |
           set -eu
+          ovmf_code=""
+          for candidate in \
+            /usr/share/OVMF/OVMF_CODE.fd \
+            /usr/share/OVMF/OVMF_CODE_4M.fd \
+            /usr/share/edk2/ovmf/OVMF_CODE.fd \
+            /usr/share/qemu/OVMF.fd; do
+            if [ -f "$candidate" ]; then
+              ovmf_code="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$ovmf_code" ]; then
+            echo "Could not find an OVMF firmware file on runner"
+            exit 1
+          fi
+
           timeout 120s qemu-system-x86_64 \
-            -bios /usr/share/OVMF/OVMF_CODE.fd \
+            -bios "$ovmf_code" \
             -kernel /tmp/artifacts/bzImage-linux-mados \
             -initrd /tmp/initramfs.cpio.gz \
             -append "console=ttyS0 rdinit=/init loglevel=7" \

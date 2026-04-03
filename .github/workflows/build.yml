@@ -40,9 +40,14 @@ jobs:
             llvm \
             binutils
 
+      - name: Create non-root build user
+        run: |
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+
       - name: Build packages with makepkg
         run: |
-          makepkg -s --noconfirm
+          su builder -c "cd '$GITHUB_WORKSPACE' && makepkg -s --noconfirm"
 
       - name: Validate key config symbols
         run: |

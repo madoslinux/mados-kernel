@@ -76,8 +76,8 @@ jobs:
           check_cfg "$compat_cfg" '^CONFIG_DRM_SIMPLEDRM=y$' 'CONFIG_DRM_SIMPLEDRM must be enabled in compat flavor'
           check_cfg "$compat_cfg" '^CONFIG_FRAMEBUFFER_CONSOLE=y$' 'CONFIG_FRAMEBUFFER_CONSOLE must be enabled in compat flavor'
 
-          # Perf flavor: ensure modern baseline selection exists + Plymouth path.
-          check_cfg "$perf_cfg" '^CONFIG_GENERIC_CPU3=y$' 'CONFIG_GENERIC_CPU3 must be enabled in perf flavor'
+          # Perf flavor: ensure Plymouth path + basic performance options.
+          check_cfg "$perf_cfg" '^CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y$' 'CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE must be enabled in perf flavor'
           check_cfg "$perf_cfg" '^CONFIG_DRM_SIMPLEDRM=y$' 'CONFIG_DRM_SIMPLEDRM must be enabled in perf flavor'
 
       - name: Collect output packages

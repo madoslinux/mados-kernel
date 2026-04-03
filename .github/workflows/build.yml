@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: archlinux:latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     permissions:
       contents: write
 
@@ -40,179 +40,43 @@ jobs:
             llvm \
             binutils
 
-      - name: Clone zen-kernel source
+      - name: Build packages with makepkg
         run: |
-          git clone --depth=1 --branch v6.19.10-zen1 https://github.com/zen-kernel/zen-kernel.git /tmp/linux
-          cd /tmp/linux
-          pwd && ls -la
+          makepkg -s --noconfirm
 
-      - name: Configure kernel
+      - name: Validate key config symbols
         run: |
-          cd /tmp/linux
-          make x86_64_defconfig
-          sed -i 's|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION="-mados-zen"|g' .config
-          sed -i 's|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g' .config
-          sed -i 's|CONFIG_DEBUG_INFO=.*|CONFIG_DEBUG_INFO=n|g' .config
+          set -eu
+          compat_cfg="src/build-compat/.config"
+          perf_cfg="src/build-perf/.config"
 
-          # Replace any variation (commented or not) with =y - handles is not set, =m, =n, etc
-          # Network drivers
-          sed -i 's|^# CONFIG_R8169 is not set$|CONFIG_R8169=y|gm' .config
-          sed -i 's|^CONFIG_R8169=.*$|CONFIG_R8169=y|gm' .config
-          sed -i 's|^# CONFIG_E1000 is not set$|CONFIG_E1000=y|gm' .config
-          sed -i 's|^CONFIG_E1000=.*$|CONFIG_E1000=y|gm' .config
-          sed -i 's|^# CONFIG_E1000E is not set$|CONFIG_E1000E=y|gm' .config
-          sed -i 's|^CONFIG_E1000E=.*$|CONFIG_E1000E=y|gm' .config
-          sed -i 's|^# CONFIG_IGB is not set$|CONFIG_IGB=y|gm' .config
-          sed -i 's|^CONFIG_IGB=.*$|CONFIG_IGB=y|gm' .config
-          sed -i 's|^# CONFIG_IXGBE is not set$|CONFIG_IXGBE=y|gm' .config
-          sed -i 's|^CONFIG_IXGBE=.*$|CONFIG_IXGBE=y|gm' .config
-          sed -i 's|^# CONFIG_VIRTIO_NET is not set$|CONFIG_VIRTIO_NET=y|gm' .config
-          sed -i 's|^CONFIG_VIRTIO_NET=.*$|CONFIG_VIRTIO_NET=y|gm' .config
-          sed -i 's|^# CONFIG_VIRTIO_PCI is not set$|CONFIG_VIRTIO_PCI=y|gm' .config
-          sed -i 's|^CONFIG_VIRTIO_PCI=.*$|CONFIG_VIRTIO_PCI=y|gm' .config
-          sed -i 's|^# CONFIG_USB_NET is not set$|CONFIG_USB_NET=y|gm' .config
-          sed -i 's|^CONFIG_USB_NET=.*$|CONFIG_USB_NET=y|gm' .config
-          sed -i 's|^# CONFIG_USB_RTL8150 is not set$|CONFIG_USB_RTL8150=y|gm' .config
-          sed -i 's|^CONFIG_USB_RTL8150=.*$|CONFIG_USB_RTL8150=y|gm' .config
-          sed -i 's|^# CONFIG_USB_RTL8152 is not set$|CONFIG_USB_RTL8152=y|gm' .config
-          sed -i 's|^CONFIG_USB_RTL8152=.*$|CONFIG_USB_RTL8152=y|gm' .config
+          if [ ! -f "$compat_cfg" ] || [ ! -f "$perf_cfg" ]; then
+            echo "Could not find generated configs under src/build-*"
+            exit 1
+          fi
 
-          # ZRAM
-          sed -i 's|^# CONFIG_ZRAM is not set$|CONFIG_ZRAM=y|gm' .config
-          sed -i 's|^CONFIG_ZRAM=.*$|CONFIG_ZRAM=y|gm' .config
+          grep -q '^CONFIG_GENERIC_CPU=y' "$compat_cfg"
+          grep -q '^CONFIG_DRM_SIMPLEDRM=y' "$compat_cfg"
+          grep -q '^CONFIG_FRAMEBUFFER_CONSOLE=y' "$compat_cfg"
 
-          # OVERLAY_FS (Docker/containers)
-          sed -i 's|^# CONFIG_OVERLAY_FS is not set$|CONFIG_OVERLAY_FS=y|gm' .config
-          sed -i 's|^CONFIG_OVERLAY_FS=.*$|CONFIG_OVERLAY_FS=y|gm' .config
+          grep -q '^CONFIG_GENERIC_CPU3=y' "$perf_cfg"
+          grep -q '^CONFIG_DRM_SIMPLEDRM=y' "$perf_cfg"
 
-          # SQUASHFS (live boot)
-          sed -i 's|^# CONFIG_SQUASHFS is not set$|CONFIG_SQUASHFS=y|gm' .config
-          sed -i 's|^CONFIG_SQUASHFS=.*$|CONFIG_SQUASHFS=y|gm' .config
-          sed -i 's|^# CONFIG_SQUASHFS_DECOMP_MULTI is not set$|CONFIG_SQUASHFS_DECOMP_MULTI=y|gm' .config
-          sed -i 's|^CONFIG_SQUASHFS_DECOMP_MULTI=.*$|CONFIG_SQUASHFS_DECOMP_MULTI=y|gm' .config
-          sed -i 's|^# CONFIG_SQUASHFS_CHOICE_DECOMPRESS is not set$|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|gm' .config
-          sed -i 's|^CONFIG_SQUASHFS_CHOICE_DECOMPRESS=.*$|CONFIG_SQUASHFS_CHOICE_DECOMPRESS=y|gm' .config
-          sed -i 's|^# CONFIG_XZ_DECOMPRESS is not set$|CONFIG_XZ_DECOMPRESS=y|gm' .config
-          sed -i 's|^CONFIG_XZ_DECOMPRESS=.*$|CONFIG_XZ_DECOMPRESS=y|gm' .config
-          sed -i 's|^# CONFIG_ISO9660_FS is not set$|CONFIG_ISO9660_FS=y|gm' .config
-          sed -i 's|^CONFIG_ISO9660_FS=.*$|CONFIG_ISO9660_FS=y|gm' .config
-          sed -i 's|^# CONFIG_JOLIET is not set$|CONFIG_JOLIET=y|gm' .config
-          sed -i 's|^CONFIG_JOLIET=.*$|CONFIG_JOLIET=y|gm' .config
-          sed -i 's|^# CONFIG_SQUASHFS_ZSTD is not set$|CONFIG_SQUASHFS_ZSTD=y|gm' .config
-          sed -i 's|^CONFIG_SQUASHFS_ZSTD=.*$|CONFIG_SQUASHFS_ZSTD=y|gm' .config
-
-          # ZSTD (needed for squashfs zstd)
-          sed -i 's|^# CONFIG_CRYPTO_ZSTD is not set$|CONFIG_CRYPTO_ZSTD=y|gm' .config
-          sed -i 's|^CONFIG_CRYPTO_ZSTD=.*$|CONFIG_CRYPTO_ZSTD=y|gm' .config
-          sed -i 's|^# CONFIG_ZSTD_COMMON is not set$|CONFIG_ZSTD_COMMON=y|gm' .config
-          sed -i 's|^CONFIG_ZSTD_COMMON=.*$|CONFIG_ZSTD_COMMON=y|gm' .config
-          sed -i 's|^# CONFIG_ZSTD_DECOMPRESS is not set$|CONFIG_ZSTD_DECOMPRESS=y|gm' .config
-          sed -i 's|^CONFIG_ZSTD_DECOMPRESS=.*$|CONFIG_ZSTD_DECOMPRESS=y|gm' .config
-          sed -i 's|^# CONFIG_DECOMPRESS_ZSTD is not set$|CONFIG_DECOMPRESS_ZSTD=y|gm' .config
-          sed -i 's|^CONFIG_DECOMPRESS_ZSTD=.*$|CONFIG_DECOMPRESS_ZSTD=y|gm' .config
-
-          # BPF LSM (security - silences warning)
-          sed -i 's|^# CONFIG_BPF_LSM is not set$|CONFIG_BPF_LSM=y|gm' .config
-          sed -i 's|^CONFIG_BPF_LSM=.*$|CONFIG_BPF_LSM=y|gm' .config
-
-          # LANDLOCK (filesystem sandboxing - required by systemd)
-          sed -i 's|^# CONFIG_SECURITY_LANDLOCK is not set$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
-          sed -i 's|^CONFIG_SECURITY_LANDLOCK=.*$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
-
-          # BTRFS (installer)
-          sed -i 's|^# CONFIG_BTRFS_FS is not set$|CONFIG_BTRFS_FS=y|gm' .config
-          sed -i 's|^CONFIG_BTRFS_FS=.*$|CONFIG_BTRFS_FS=y|gm' .config
-          sed -i 's|^# CONFIG_BTRFS_FS_POSIX_ACL is not set$|CONFIG_BTRFS_FS_POSIX_ACL=y|gm' .config
-          sed -i 's|^CONFIG_BTRFS_FS_POSIX_ACL=.*$|CONFIG_BTRFS_FS_POSIX_ACL=y|gm' .config
-
-          # DM_SNAPSHOT (mkinitcpio archiso hooks require this as a module)
-          sed -i 's|^# CONFIG_DM_SNAPSHOT is not set$|CONFIG_DM_SNAPSHOT=m|gm' .config
-          sed -i 's|^CONFIG_DM_SNAPSHOT=.*$|CONFIG_DM_SNAPSHOT=m|gm' .config
-
-          make olddefconfig
-
-          # Apply sed again after olddefconfig - it recreates some configs that were initially missing
-          sed -i 's|^# CONFIG_SQUASHFS_ZSTD is not set$|CONFIG_SQUASHFS_ZSTD=y|gm' .config
-          sed -i 's|^CONFIG_SQUASHFS_ZSTD=.*$|CONFIG_SQUASHFS_ZSTD=y|gm' .config
-          sed -i 's|^# CONFIG_ZSTD_DECOMPRESS is not set$|CONFIG_ZSTD_DECOMPRESS=y|gm' .config
-          sed -i 's|^CONFIG_ZSTD_DECOMPRESS=.*$|CONFIG_ZSTD_DECOMPRESS=y|gm' .config
-          sed -i 's|^# CONFIG_BTRFS_FS is not set$|CONFIG_BTRFS_FS=y|gm' .config
-          sed -i 's|^CONFIG_BTRFS_FS=.*$|CONFIG_BTRFS_FS=y|gm' .config
-          sed -i 's|^# CONFIG_SECURITY_LANDLOCK is not set$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
-          sed -i 's|^CONFIG_SECURITY_LANDLOCK=.*$|CONFIG_SECURITY_LANDLOCK=y|gm' .config
-          sed -i 's|^# CONFIG_DM_SNAPSHOT is not set$|CONFIG_DM_SNAPSHOT=m|gm' .config
-          sed -i 's|^CONFIG_DM_SNAPSHOT=.*$|CONFIG_DM_SNAPSHOT=m|gm' .config
-
-      - name: Build kernel
+      - name: Collect output packages
         run: |
-          cd /tmp/linux
-          make -j$(nproc) LLVM=1 CC=clang bzImage modules 2>&1 | tail -100
-
-      - name: Create kernel package
-        run: |
-          cd /tmp/linux
-          kernver="$(make -s kernelrelease)"
-          echo "Kernel version: ${kernver}"
-
-          mkdir -p /tmp/pkgdir/boot
-          mkdir -p "/tmp/pkgdir/usr/lib/modules/${kernver}"
-
-          install -Dm644 arch/x86/boot/bzImage /tmp/pkgdir/boot/vmlinuz-linux-mados-zen
-          make INSTALL_MOD_PATH=/tmp/pkgdir modules_install
-          install -Dm644 System.map /tmp/pkgdir/boot/System.map-linux-mados-zen
-          install -Dm644 .config /tmp/pkgdir/boot/config-linux-mados-zen
-          echo "${kernver}" > "/tmp/pkgdir/usr/lib/modules/${kernver}/kernel"
-
-      - name: Create kernel tarball
-        run: |
-          cd /tmp/pkgdir
-          tar -cvJf /tmp/linux-mados-zen-6.19.10-zen1-x86_64.pkg.tar.xz *
-          ls -lh /tmp/linux-mados-zen-*.pkg.tar.xz
-
-      - name: Create headers package
-        run: |
-          cd /tmp/linux
-          kernver="$(make -s kernelrelease)"
-          echo "Creating headers for version: ${kernver}"
-
-          mkdir -p /tmp/headersdir/usr/lib/modules/${kernver}
-          mkdir -p /tmp/headersdir/usr/src/
-
-          # Copy headers source tree (create parent dirs first)
-          mkdir -p /tmp/headersdir/usr/src/linux-${kernver}
-          cp -r include /tmp/headersdir/usr/src/linux-${kernver}/
-
-          mkdir -p /tmp/headersdir/usr/src/linux-${kernver}/arch/x86
-          cp -r arch/x86/include /tmp/headersdir/usr/src/linux-${kernver}/arch/x86/ 2>/dev/null || true
-
-          cp -r scripts /tmp/headersdir/usr/src/linux-${kernver}/
-
-          # Copy build files
-          cp Makefile /tmp/headersdir/usr/src/linux-${kernver}/ 2>/dev/null || true
-          cp Module.symvers /tmp/headersdir/usr/src/linux-${kernver}/ 2>/dev/null || true
-
-          # Install generated headers and config
-          install -Dm644 .config /tmp/headersdir/usr/src/linux-${kernver}/.config
-          install -Dm644 System.map /tmp/headersdir/usr/src/linux-${kernver}/System.map
-
-          # Create build symlink for kernel module compilation
-          ln -s /usr/src/linux-${kernver} /tmp/headersdir/usr/lib/modules/${kernver}/build
-
-      - name: Create headers tarball
-        run: |
-          cd /tmp/headersdir
-          tar -cvJf /tmp/linux-mados-zen-headers-6.19.10-zen1-x86_64.pkg.tar.xz *
-          ls -lh /tmp/linux-mados-zen-headers-*.pkg.tar.xz
+          mkdir -p /tmp/artifacts
+          cp -v ./*.pkg.tar.* /tmp/artifacts/
+          cp -v src/build-compat/arch/x86/boot/bzImage /tmp/artifacts/bzImage-linux-mados
+          ls -lh /tmp/artifacts
 
       - name: Upload Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            /tmp/linux-mados-zen-*.pkg.tar.xz
-            /tmp/linux-mados-zen-headers-*.pkg.tar.xz
-          tag_name: ${{ github.ref }}
-          name: madOS Kernel ${{ github.ref }}
+            /tmp/artifacts/*.pkg.tar.*
+          tag_name: ${{ github.ref_name }}
+          name: madOS Kernel ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -220,6 +84,68 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: kernel-packages
-          path: |
-            /tmp/linux-mados-zen-*.pkg.tar.xz
-            /tmp/linux-mados-zen-headers-*.pkg.tar.xz
+          path: /tmp/artifacts/*
+
+  qemu-smoke:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 20
+
+    steps:
+      - name: Install QEMU and tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 ovmf busybox-static cpio
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: kernel-packages
+          path: /tmp/artifacts
+
+      - name: Build tiny initramfs for smoke boot
+        run: |
+          set -eu
+          mkdir -p /tmp/initramfs/{bin,dev,proc,sys}
+          cp /bin/busybox /tmp/initramfs/bin/busybox
+          ln -sf /bin/busybox /tmp/initramfs/bin/sh
+          ln -sf /bin/busybox /tmp/initramfs/bin/mount
+          ln -sf /bin/busybox /tmp/initramfs/bin/poweroff
+
+          cat > /tmp/initramfs/init <<'EOF'
+          #!/bin/sh
+          mount -t proc proc /proc
+          mount -t sysfs sys /sys
+          mount -t devtmpfs devtmpfs /dev
+          echo "SMOKE_OK: kernel booted and initramfs ran"
+          poweroff -f
+          exec sh
+          EOF
+
+          chmod +x /tmp/initramfs/init
+          (cd /tmp/initramfs && find . -print0 | cpio --null -ov --format=newc | gzip -9) > /tmp/initramfs.cpio.gz
+
+      - name: Smoke boot test (BIOS)
+        run: |
+          set -eu
+          timeout 120s qemu-system-x86_64 \
+            -kernel /tmp/artifacts/bzImage-linux-mados \
+            -initrd /tmp/initramfs.cpio.gz \
+            -append "console=ttyS0 rdinit=/init loglevel=7" \
+            -nographic -no-reboot -m 1024 -smp 2 \
+            2>&1 | tee /tmp/qemu-bios.log
+
+          grep -q "SMOKE_OK: kernel booted and initramfs ran" /tmp/qemu-bios.log
+
+      - name: Smoke boot test (UEFI)
+        run: |
+          set -eu
+          timeout 120s qemu-system-x86_64 \
+            -bios /usr/share/OVMF/OVMF_CODE.fd \
+            -kernel /tmp/artifacts/bzImage-linux-mados \
+            -initrd /tmp/initramfs.cpio.gz \
+            -append "console=ttyS0 rdinit=/init loglevel=7" \
+            -nographic -no-reboot -m 1024 -smp 2 \
+            2>&1 | tee /tmp/qemu-uefi.log
+
+          grep -q "SMOKE_OK: kernel booted and initramfs ran" /tmp/qemu-uefi.log

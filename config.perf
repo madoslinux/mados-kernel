@@ -1,0 +1,12 @@
+# Performance flavor extras for newer CPUs
+# Keep this separate so compatibility flavor remains broadly bootable.
+
+CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y
+# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+
+# Use x86-64-v3 baseline for the performance flavor.
+CONFIG_GENERIC_CPU3=y
+
+# Optional performance features for modern systems
+CONFIG_LTO_CLANG=y
+CONFIG_LTO_CLANG_THIN=y

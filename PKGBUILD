@@ -1,120 +1,214 @@
-# madOS Kernel - linux-zen optimized
+# madOS Kernel packages
 # Maintainer: madOS Team
 
-pkgbase=linux-mados-zen
+pkgbase=linux-mados
 pkgrel=1
 pkgver=6.19.10.zen1-1
 _kernelver=6.19.10-zen1
-pkgdesc="madOS kernel optimized for desktop responsiveness with NVMe + Btrfs support"
+pkgdesc="madOS kernels: broad-compat and performance flavors with Plymouth-ready defaults"
 url="https://github.com/madoslinux/mados-kernel"
 arch=(x86_64)
 license=(GPL-2.0-or-later)
 makedepends=(
-    bc
-    cpio
-    gettext
-    libelf
-    pahole
-    perl
-    python
-    tar
-    xz
-    zstd
-    git
-    ccache
-    ncurses
-    clang
-    lld
-    llvm
-    binutils
+  bc
+  cpio
+  gettext
+  libelf
+  pahole
+  perl
+  python
+  tar
+  xz
+  zstd
+  git
+  ccache
+  ncurses
+  clang
+  lld
+  llvm
+  binutils
 )
 options=(!strip)
 source=(
-    config
+  config.base
+  config.plymouth
+  config.perf
 )
 sha256sums=(
-    'SKIP'
+  SKIP
+  SKIP
+  SKIP
 )
 
+_set_kcfg() {
+  local cfg_file="$1"
+  local key="$2"
+  local val="$3"
+
+  sed -i -E \
+    -e "s|^${key}=.*$|${key}=${val}|" \
+    -e "s|^# ${key} is not set$|${key}=${val}|" \
+    "$cfg_file"
+
+  if ! grep -q "^${key}=" "$cfg_file"; then
+    printf '%s=%s\n' "$key" "$val" >>"$cfg_file"
+  fi
+}
+
+_disable_kcfg() {
+  local cfg_file="$1"
+  local key="$2"
+
+  sed -i -E \
+    -e "s|^${key}=.*$|# ${key} is not set|" \
+    "$cfg_file"
+
+  if ! grep -q "^# ${key} is not set$" "$cfg_file"; then
+    printf '# %s is not set\n' "$key" >>"$cfg_file"
+  fi
+}
+
+_apply_fragment() {
+  local cfg_file="$1"
+  local fragment="$2"
+
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+
+    if [[ "$line" =~ ^([A-Z0-9_]+)=(.*)$ ]]; then
+      _set_kcfg "$cfg_file" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+    elif [[ "$line" =~ ^#\ ([A-Z0-9_]+)\ is\ not\ set$ ]]; then
+      _disable_kcfg "$cfg_file" "${BASH_REMATCH[1]}"
+    fi
+  done <"$fragment"
+}
+
+_configure_flavor() {
+  local outdir="$1"
+  local localversion="$2"
+  local flavor="$3"
+
+  install -dm755 "$outdir"
+  cp "${srcdir}/linux-${_kernelver}/.config" "$outdir/.config"
+
+  _set_kcfg "$outdir/.config" CONFIG_LOCALVERSION "\"${localversion}\""
+  _set_kcfg "$outdir/.config" CONFIG_LOCALVERSION_AUTO n
+
+  _apply_fragment "$outdir/.config" "${srcdir}/config.base"
+  _apply_fragment "$outdir/.config" "${srcdir}/config.plymouth"
+
+  if [[ "$flavor" == "perf" ]]; then
+    _apply_fragment "$outdir/.config" "${srcdir}/config.perf"
+  else
+    _disable_kcfg "$outdir/.config" CONFIG_GENERIC_CPU3
+    _set_kcfg "$outdir/.config" CONFIG_GENERIC_CPU y
+    _disable_kcfg "$outdir/.config" CONFIG_MNATIVE_INTEL
+    _disable_kcfg "$outdir/.config" CONFIG_MNATIVE_AMD
+  fi
+
+  make -C "${srcdir}/linux-${_kernelver}" O="$outdir" olddefconfig
+}
+
 prepare() {
-    cd ${srcdir}
+  cd "${srcdir}"
+  git clone --depth 1 --branch "v${_kernelver}" https://github.com/zen-kernel/zen-kernel.git "linux-${_kernelver}"
 
-    # Clone zen-kernel source
-    git clone --depth 1 --branch v${_kernelver} https://github.com/zen-kernel/zen-kernel.git linux-${_kernelver}
+  make -C "linux-${_kernelver}" O="${srcdir}/build-compat" x86_64_defconfig
+  make -C "linux-${_kernelver}" O="${srcdir}/build-perf" x86_64_defconfig
 
-    cd linux-${_kernelver}
-
-    # Apply custom config
-    cp "${srcdir}/config" .config
-
-    # Set localversion
-    sed -i "s|CONFIG_LOCALVERSION=.*|CONFIG_LOCALVERSION=\"-mados-zen\"|g" .config
-    sed -i "s|CONFIG_LOCALVERSION_AUTO=.*|CONFIG_LOCALVERSION_AUTO=n|g" .config
-
-    # Make olddefconfig to ensure all options are resolved
-    yes | make olddefconfig 2>/dev/null || true
+  _configure_flavor "${srcdir}/build-compat" "-mados" "compat"
+  _configure_flavor "${srcdir}/build-perf" "-mados-perf" "perf"
 }
 
 build() {
-    cd linux-${_kernelver}
-    make -j$(nproc) LLVM=1 CC=clang bzImage
+  make -C "${srcdir}/linux-${_kernelver}" O="${srcdir}/build-compat" -j"$(nproc)" LLVM=1 CC=clang bzImage modules
+  make -C "${srcdir}/linux-${_kernelver}" O="${srcdir}/build-perf" -j"$(nproc)" LLVM=1 CC=clang bzImage modules
 }
 
-package_linux-mados-zen() {
-    pkgdesc="madOS kernel optimized for desktop responsiveness with NVMe + Btrfs support"
-    depends=(coreutils kmod initramfs)
-    optdepends=("linux-firmware: firmware images needed for some hardware")
-    provides=(linux-mados-zen=${pkgver})
-    conflicts=(linux-mados-zen)
+_package_kernel() {
+  local builddir="$1"
+  local pkgname="$2"
 
-    cd linux-${_kernelver}
-    local kernver="$(make -s kernelrelease)"
-    local kernelimg="${srcdir}/linux-${_kernelver}/arch/x86/boot/bzImage"
+  local kernver
+  kernver="$(make -s -C "${srcdir}/linux-${_kernelver}" O="$builddir" kernelrelease)"
+  local kernelimg="${builddir}/arch/x86/boot/bzImage"
 
-    # Create destination directories
-    install -dm755 ${pkgdir}/boot
-    install -dm755 ${pkgdir}/usr/lib/modules/${kernver}
+  install -dm755 "${pkgdir}/boot"
+  install -dm755 "${pkgdir}/usr/lib/modules/${kernver}"
 
-    # Install kernel image
-    install -Dm644 ${kernelimg} ${pkgdir}/boot/vmlinuz-linux-mados-zen
+  install -Dm644 "$kernelimg" "${pkgdir}/boot/vmlinuz-${pkgname}"
+  make -C "${srcdir}/linux-${_kernelver}" O="$builddir" INSTALL_MOD_PATH="${pkgdir}" modules_install
 
-    # Install modules
-    make INSTALL_MOD_PATH="${pkgdir}" modules_install
-
-    # Install System.map and config
-    install -Dm644 System.map ${pkgdir}/boot/System.map-linux-mados-zen
-    install -Dm644 .config ${pkgdir}/boot/config-linux-mados-zen
-
-    # Create kernel release file
-    echo "${kernver}" > ${pkgdir}/usr/lib/modules/${kernver}/kernel
+  install -Dm644 "${builddir}/System.map" "${pkgdir}/boot/System.map-${pkgname}"
+  install -Dm644 "${builddir}/.config" "${pkgdir}/boot/config-${pkgname}"
+  printf '%s\n' "$kernver" >"${pkgdir}/usr/lib/modules/${kernver}/kernel"
 }
 
-package_linux-mados-zen-headers() {
-    pkgdesc="madOS kernel headers for compiling external modules"
-    depends=()
-    provides=(linux-mados-zen-headers=${pkgver})
-    conflicts=(linux-mados-zen-headers)
+_package_headers() {
+  local builddir="$1"
 
-    cd linux-${_kernelver}
-    local kernver="$(make -s kernelrelease)"
+  local kernver
+  kernver="$(make -s -C "${srcdir}/linux-${_kernelver}" O="$builddir" kernelrelease)"
 
-    # Create destination directories
-    install -dm755 ${pkgdir}/usr/lib/modules/${kernver}
-    install -dm755 ${pkgdir}/usr/src/
+  install -dm755 "${pkgdir}/usr/lib/modules/${kernver}"
+  install -dm755 "${pkgdir}/usr/src/linux-${kernver}"
 
-    # Copy headers source tree
-    cp -r ${srcdir}/linux-${_kernelver}/include ${pkgdir}/usr/src/linux-${kernver}/
-    cp -r ${srcdir}/linux-${_kernelver}/arch/x86/include ${pkgdir}/usr/src/linux-${kernver}/arch/x86/
-    cp -r ${srcdir}/linux-${_kernelver}/scripts ${pkgdir}/usr/src/linux-${kernver}/
+  cp -r "${srcdir}/linux-${_kernelver}/include" "${pkgdir}/usr/src/linux-${kernver}/"
+  install -dm755 "${pkgdir}/usr/src/linux-${kernver}/arch/x86"
+  cp -r "${srcdir}/linux-${_kernelver}/arch/x86/include" "${pkgdir}/usr/src/linux-${kernver}/arch/x86/"
+  cp -r "${srcdir}/linux-${_kernelver}/scripts" "${pkgdir}/usr/src/linux-${kernver}/"
 
-    # Copy build files
-    cp ${srcdir}/linux-${_kernelver}/Makefile ${pkgdir}/usr/src/linux-${kernver}/ 2>/dev/null || true
-    cp ${srcdir}/linux-${_kernelver}/Module.symvers ${pkgdir}/usr/src/linux-${kernver}/ 2>/dev/null || true
+  install -Dm644 "${srcdir}/linux-${_kernelver}/Makefile" "${pkgdir}/usr/src/linux-${kernver}/Makefile"
+  install -Dm644 "$builddir/.config" "${pkgdir}/usr/src/linux-${kernver}/.config"
+  install -Dm644 "$builddir/System.map" "${pkgdir}/usr/src/linux-${kernver}/System.map"
 
-    # Install generated headers and config
-    install -Dm644 .config ${pkgdir}/usr/src/linux-${kernver}/.config
-    install -Dm644 System.map ${pkgdir}/usr/src/linux-${kernver}/System.map
+  if [[ -f "$builddir/Module.symvers" ]]; then
+    install -Dm644 "$builddir/Module.symvers" "${pkgdir}/usr/src/linux-${kernver}/Module.symvers"
+  fi
 
-    # Create build symlink for kernel module compilation
-    ln -s /usr/src/linux-${kernver} ${pkgdir}/usr/lib/modules/${kernver}/build
+  ln -s "/usr/src/linux-${kernver}" "${pkgdir}/usr/lib/modules/${kernver}/build"
+}
+
+package_linux-mados() {
+  pkgdesc="madOS kernel tuned for broad x86_64 compatibility and Plymouth"
+  depends=(coreutils kmod)
+  optdepends=(
+    "linux-firmware: firmware images needed for some hardware"
+    "mkinitcpio: initramfs generation"
+    "plymouth: boot splash userspace"
+  )
+  provides=(linux-mados="${pkgver}")
+  conflicts=(linux-mados)
+
+  _package_kernel "${srcdir}/build-compat" "linux-mados"
+}
+
+package_linux-mados-headers() {
+  pkgdesc="Headers for linux-mados"
+  provides=(linux-mados-headers="${pkgver}")
+  conflicts=(linux-mados-headers)
+
+  _package_headers "${srcdir}/build-compat"
+}
+
+package_linux-mados-perf() {
+  pkgdesc="madOS performance kernel for newer x86_64 CPUs with Plymouth"
+  depends=(coreutils kmod)
+  optdepends=(
+    "linux-firmware: firmware images needed for some hardware"
+    "mkinitcpio: initramfs generation"
+    "plymouth: boot splash userspace"
+  )
+  provides=(linux-mados-perf="${pkgver}")
+  conflicts=(linux-mados-perf)
+
+  _package_kernel "${srcdir}/build-perf" "linux-mados-perf"
+}
+
+package_linux-mados-perf-headers() {
+  pkgdesc="Headers for linux-mados-perf"
+  provides=(linux-mados-perf-headers="${pkgver}")
+  conflicts=(linux-mados-perf-headers)
+
+  _package_headers "${srcdir}/build-perf"
 }

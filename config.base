@@ -3,13 +3,7 @@ CONFIG_DEFAULT_HOSTNAME="mados"
 
 # Broad x86_64 compatibility baseline (Intel Atom 64-bit and newer)
 CONFIG_X86_64=y
-# CONFIG_GENERIC_CPU2 is not set
-# CONFIG_GENERIC_CPU3 is not set
-# CONFIG_GENERIC_CPU4 is not set
-# CONFIG_GENERIC_CPU_AUTOPROBE is not set
-CONFIG_GENERIC_CPU=y
-# CONFIG_MNATIVE_INTEL is not set
-# CONFIG_MNATIVE_AMD is not set
+# CONFIG_X86_NATIVE_CPU is not set
 
 # Storage and filesystems needed for broad boot compatibility
 CONFIG_ATA=y

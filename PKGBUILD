@@ -100,10 +100,7 @@ _configure_kernel() {
   _apply_fragment "$outdir/.config" "${srcdir}/config.base"
   _apply_fragment "$outdir/.config" "${srcdir}/config.plymouth"
 
-  _disable_kcfg "$outdir/.config" CONFIG_GENERIC_CPU3
-  _set_kcfg "$outdir/.config" CONFIG_GENERIC_CPU y
-  _disable_kcfg "$outdir/.config" CONFIG_MNATIVE_INTEL
-  _disable_kcfg "$outdir/.config" CONFIG_MNATIVE_AMD
+  _disable_kcfg "$outdir/.config" CONFIG_X86_NATIVE_CPU
 
   make -C "${srcdir}/linux-${_kernelver}" O="$outdir" olddefconfig
 }

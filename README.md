@@ -82,7 +82,7 @@ This check is strict by design and must pass before pushing.
 
 Validated symbol policy covers:
 
-- Generic CPU baseline for broad x86_64 support (`CONFIG_GENERIC_CPU=y`, no `MNATIVE`)
+- Generic CPU baseline for broad x86_64 support (no `X86_NATIVE_CPU`)
 - Boot-critical storage and filesystem symbols as built-in (`AHCI`, `NVMe`, `ext4`, `vfat`, `iso9660`, `squashfs`)
 - Early graphics/console path needed by installer and Plymouth (`simpledrm`, framebuffer console)
 - UEFI boot symbols (`EFI`, `EFI_STUB`)

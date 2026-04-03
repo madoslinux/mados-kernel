@@ -21,9 +21,7 @@ check_cfg() {
 }
 
 check_cfg '^CONFIG_X86_64=y$' 'CONFIG_X86_64 must be enabled for target architecture'
-check_cfg '^CONFIG_GENERIC_CPU=y$' 'CONFIG_GENERIC_CPU must be enabled for Atom+ compatibility'
-check_cfg '^# CONFIG_MNATIVE_INTEL is not set$' 'CONFIG_MNATIVE_INTEL must be disabled in generic flavor'
-check_cfg '^# CONFIG_MNATIVE_AMD is not set$' 'CONFIG_MNATIVE_AMD must be disabled in generic flavor'
+check_cfg '^# CONFIG_X86_NATIVE_CPU is not set$' 'CONFIG_X86_NATIVE_CPU must be disabled for Atom+ compatibility'
 check_cfg '^CONFIG_PREEMPT=y$' 'CONFIG_PREEMPT must be enabled for desktop responsiveness'
 check_cfg '^CONFIG_HZ=1000$' 'CONFIG_HZ must remain at 1000 for current desktop policy'
 

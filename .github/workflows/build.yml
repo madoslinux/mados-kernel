@@ -51,6 +51,7 @@ jobs:
 
       - name: Validate key config symbols
         run: |
+          set -eu
           ./scripts/validate-kernel-config.sh src/build-generic/.config
 
       - name: Collect output packages
@@ -131,29 +132,31 @@ jobs:
       - name: Smoke boot test (UEFI)
         run: |
           set -eu
-          ovmf_code=""
-          for candidate in \
+          uefi_ok=0
+          for ovmf_code in \
             /usr/share/OVMF/OVMF_CODE.fd \
             /usr/share/OVMF/OVMF_CODE_4M.fd \
+            /usr/share/OVMF/OVMF.fd \
             /usr/share/edk2/ovmf/OVMF_CODE.fd \
             /usr/share/qemu/OVMF.fd; do
-            if [ -f "$candidate" ]; then
-              ovmf_code="$candidate"
+            [ -r "$ovmf_code" ] || continue
+            echo "Trying OVMF firmware: $ovmf_code"
+
+            timeout 120s qemu-system-x86_64 \
+              -bios "$ovmf_code" \
+              -kernel /tmp/artifacts/bzImage-linux-mados \
+              -initrd /tmp/initramfs.cpio.gz \
+              -append "console=ttyS0 rdinit=/init loglevel=7" \
+              -nographic -no-reboot -m 1024 -smp 2 \
+              2>&1 | tee /tmp/qemu-uefi.log || true
+
+            if grep -q "SMOKE_OK: kernel booted and initramfs ran" /tmp/qemu-uefi.log; then
+              uefi_ok=1
               break
             fi
           done
 
-          if [ -z "$ovmf_code" ]; then
-            echo "Could not find an OVMF firmware file on runner"
+          if [ "$uefi_ok" -ne 1 ]; then
+            echo "UEFI smoke test failed with all known OVMF firmware paths"
             exit 1
           fi
-
-          timeout 120s qemu-system-x86_64 \
-            -bios "$ovmf_code" \
-            -kernel /tmp/artifacts/bzImage-linux-mados \
-            -initrd /tmp/initramfs.cpio.gz \
-            -append "console=ttyS0 rdinit=/init loglevel=7" \
-            -nographic -no-reboot -m 1024 -smp 2 \
-            2>&1 | tee /tmp/qemu-uefi.log
-
-          grep -q "SMOKE_OK: kernel booted and initramfs ran" /tmp/qemu-uefi.log

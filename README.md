@@ -65,7 +65,7 @@ This keeps the config reproducible and avoids long, stale monolithic configs.
 GitHub Actions now validates:
 
 - Package build via `makepkg`
-- Key kernel symbols for compatibility and Plymouth
+- Key kernel symbols for Atom x86_64+ compatibility and Plymouth
 - QEMU smoke boot for `linux-mados` in BIOS and UEFI mode using a tiny initramfs
 
 The smoke test confirms early boot execution path (`SMOKE_OK`) and catches hard boot regressions quickly.
@@ -79,6 +79,13 @@ To avoid spending GitHub Actions minutes on preventable failures, this repositor
 - If required build dependencies are missing, it fails and shows the exact `pacman` command to install them.
 
 This check is strict by design and must pass before pushing.
+
+Validated symbol policy covers:
+
+- Generic CPU baseline for broad x86_64 support (`CONFIG_GENERIC_CPU=y`, no `MNATIVE`)
+- Boot-critical storage and filesystem symbols as built-in (`AHCI`, `NVMe`, `ext4`, `vfat`, `iso9660`, `squashfs`)
+- Early graphics/console path needed by installer and Plymouth (`simpledrm`, framebuffer console)
+- UEFI boot symbols (`EFI`, `EFI_STUB`)
 
 ## Troubleshooting
 

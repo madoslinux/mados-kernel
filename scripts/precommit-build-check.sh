@@ -9,7 +9,7 @@ if ! command -v makepkg >/dev/null 2>&1; then
   exit 1
 fi
 
-flags_env="${MADOS_PRECOMMIT_MAKEPKG_FLAGS:---noconfirm --nopackage}"
+flags_env="${MADOS_PRECOMMIT_MAKEPKG_FLAGS:---noconfirm}"
 read -r -a makepkg_flags <<<"$flags_env"
 
 printf 'Running local kernel build check with makepkg -s %s\n' "$flags_env"

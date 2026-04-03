@@ -75,12 +75,12 @@ The smoke test confirms early boot execution path (`SMOKE_OK`) and catches hard 
 To avoid spending GitHub Actions minutes on preventable failures, this repository includes local checks:
 
 - `.git/hooks/pre-push` runs `scripts/precommit-build-check.sh` before any push.
-- The script runs `makepkg -s --noconfirm --nopackage` and then validates key config symbols.
+- The script runs `makepkg -s --noconfirm` and then validates key config symbols.
 
 Useful overrides:
 
 - Skip once: `MADOS_SKIP_PREPUSH_BUILD=1 git push`
-- Custom makepkg flags: `MADOS_PRECOMMIT_MAKEPKG_FLAGS='--noconfirm --noextract --nopackage' git push`
+- Custom makepkg flags: `MADOS_PRECOMMIT_MAKEPKG_FLAGS='--noconfirm --noextract' git push`
 
 ## Troubleshooting
 

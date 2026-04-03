@@ -60,12 +60,27 @@ jobs:
             exit 1
           fi
 
-          grep -q '^CONFIG_GENERIC_CPU=y' "$compat_cfg"
-          grep -q '^CONFIG_DRM_SIMPLEDRM=y' "$compat_cfg"
-          grep -q '^CONFIG_FRAMEBUFFER_CONSOLE=y' "$compat_cfg"
+          check_cfg() {
+            cfg="$1"
+            pattern="$2"
+            message="$3"
+            if ! grep -Eq "$pattern" "$cfg"; then
+              echo "Validation failed: $message"
+              echo "Pattern: $pattern"
+              echo "Config: $cfg"
+              exit 1
+            fi
+          }
 
-          grep -q '^CONFIG_GENERIC_CPU3=y' "$perf_cfg"
-          grep -q '^CONFIG_DRM_SIMPLEDRM=y' "$perf_cfg"
+          # Compatibility flavor: avoid native tuning, keep Plymouth/early graphics path.
+          check_cfg "$compat_cfg" '^# CONFIG_MNATIVE_INTEL is not set$' 'CONFIG_MNATIVE_INTEL must be disabled in compat flavor'
+          check_cfg "$compat_cfg" '^# CONFIG_MNATIVE_AMD is not set$' 'CONFIG_MNATIVE_AMD must be disabled in compat flavor'
+          check_cfg "$compat_cfg" '^CONFIG_DRM_SIMPLEDRM=y$' 'CONFIG_DRM_SIMPLEDRM must be enabled in compat flavor'
+          check_cfg "$compat_cfg" '^CONFIG_FRAMEBUFFER_CONSOLE=y$' 'CONFIG_FRAMEBUFFER_CONSOLE must be enabled in compat flavor'
+
+          # Perf flavor: ensure modern baseline selection exists + Plymouth path.
+          check_cfg "$perf_cfg" '^CONFIG_GENERIC_CPU3=y$' 'CONFIG_GENERIC_CPU3 must be enabled in perf flavor'
+          check_cfg "$perf_cfg" '^CONFIG_DRM_SIMPLEDRM=y$' 'CONFIG_DRM_SIMPLEDRM must be enabled in perf flavor'
 
       - name: Collect output packages
         run: |

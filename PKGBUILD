@@ -94,8 +94,10 @@ _configure_flavor() {
   local localversion="$2"
   local flavor="$3"
 
-  install -dm755 "$outdir"
-  cp "${srcdir}/linux-${_kernelver}/.config" "$outdir/.config"
+  if [[ ! -f "$outdir/.config" ]]; then
+    echo "Missing base config at $outdir/.config" >&2
+    return 1
+  fi
 
   _set_kcfg "$outdir/.config" CONFIG_LOCALVERSION "\"${localversion}\""
   _set_kcfg "$outdir/.config" CONFIG_LOCALVERSION_AUTO n

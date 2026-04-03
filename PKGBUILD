@@ -5,8 +5,6 @@ pkgbase=linux-mados
 pkgname=(
   linux-mados
   linux-mados-headers
-  linux-mados-perf
-  linux-mados-perf-headers
 )
 pkgrel=1
 pkgver=6.19.10.zen1
@@ -38,10 +36,8 @@ options=(!strip)
 source=(
   config.base
   config.plymouth
-  config.perf
 )
 sha256sums=(
-  SKIP
   SKIP
   SKIP
 )
@@ -89,10 +85,9 @@ _apply_fragment() {
   done <"$fragment"
 }
 
-_configure_flavor() {
+_configure_kernel() {
   local outdir="$1"
   local localversion="$2"
-  local flavor="$3"
 
   if [[ ! -f "$outdir/.config" ]]; then
     echo "Missing base config at $outdir/.config" >&2
@@ -105,14 +100,10 @@ _configure_flavor() {
   _apply_fragment "$outdir/.config" "${srcdir}/config.base"
   _apply_fragment "$outdir/.config" "${srcdir}/config.plymouth"
 
-  if [[ "$flavor" == "perf" ]]; then
-    _apply_fragment "$outdir/.config" "${srcdir}/config.perf"
-  else
-    _disable_kcfg "$outdir/.config" CONFIG_GENERIC_CPU3
-    _set_kcfg "$outdir/.config" CONFIG_GENERIC_CPU y
-    _disable_kcfg "$outdir/.config" CONFIG_MNATIVE_INTEL
-    _disable_kcfg "$outdir/.config" CONFIG_MNATIVE_AMD
-  fi
+  _disable_kcfg "$outdir/.config" CONFIG_GENERIC_CPU3
+  _set_kcfg "$outdir/.config" CONFIG_GENERIC_CPU y
+  _disable_kcfg "$outdir/.config" CONFIG_MNATIVE_INTEL
+  _disable_kcfg "$outdir/.config" CONFIG_MNATIVE_AMD
 
   make -C "${srcdir}/linux-${_kernelver}" O="$outdir" olddefconfig
 }
@@ -121,16 +112,13 @@ prepare() {
   cd "${srcdir}"
   git clone --depth 1 --branch "v${_kernelver}" https://github.com/zen-kernel/zen-kernel.git "linux-${_kernelver}"
 
-  make -C "linux-${_kernelver}" O="${srcdir}/build-compat" x86_64_defconfig
-  make -C "linux-${_kernelver}" O="${srcdir}/build-perf" x86_64_defconfig
+  make -C "linux-${_kernelver}" O="${srcdir}/build-generic" x86_64_defconfig
 
-  _configure_flavor "${srcdir}/build-compat" "-mados" "compat"
-  _configure_flavor "${srcdir}/build-perf" "-mados-perf" "perf"
+  _configure_kernel "${srcdir}/build-generic" "-mados"
 }
 
 build() {
-  make -C "${srcdir}/linux-${_kernelver}" O="${srcdir}/build-compat" -j"$(nproc)" LLVM=1 CC=clang bzImage modules
-  make -C "${srcdir}/linux-${_kernelver}" O="${srcdir}/build-perf" -j"$(nproc)" LLVM=1 CC=clang bzImage modules
+  make -C "${srcdir}/linux-${_kernelver}" O="${srcdir}/build-generic" -j"$(nproc)" LLVM=1 CC=clang bzImage modules
 }
 
 _package_kernel() {
@@ -178,7 +166,7 @@ _package_headers() {
 }
 
 package_linux-mados() {
-  pkgdesc="madOS kernel tuned for broad x86_64 compatibility and Plymouth"
+  pkgdesc="madOS generic zen-based kernel for broad x86_64 compatibility and Plymouth"
   depends=(coreutils kmod)
   optdepends=(
     "linux-firmware: firmware images needed for some hardware"
@@ -188,7 +176,7 @@ package_linux-mados() {
   provides=(linux-mados="${pkgver}")
   conflicts=(linux-mados)
 
-  _package_kernel "${srcdir}/build-compat" "linux-mados"
+  _package_kernel "${srcdir}/build-generic" "linux-mados"
 }
 
 package_linux-mados-headers() {
@@ -196,27 +184,5 @@ package_linux-mados-headers() {
   provides=(linux-mados-headers="${pkgver}")
   conflicts=(linux-mados-headers)
 
-  _package_headers "${srcdir}/build-compat"
-}
-
-package_linux-mados-perf() {
-  pkgdesc="madOS performance kernel for newer x86_64 CPUs with Plymouth"
-  depends=(coreutils kmod)
-  optdepends=(
-    "linux-firmware: firmware images needed for some hardware"
-    "mkinitcpio: initramfs generation"
-    "plymouth: boot splash userspace"
-  )
-  provides=(linux-mados-perf="${pkgver}")
-  conflicts=(linux-mados-perf)
-
-  _package_kernel "${srcdir}/build-perf" "linux-mados-perf"
-}
-
-package_linux-mados-perf-headers() {
-  pkgdesc="Headers for linux-mados-perf"
-  provides=(linux-mados-perf-headers="${pkgver}")
-  conflicts=(linux-mados-perf-headers)
-
-  _package_headers "${srcdir}/build-perf"
+  _package_headers "${srcdir}/build-generic"
 }

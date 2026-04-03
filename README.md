@@ -1,9 +1,8 @@
 # madOS Kernel
 
-Linux kernel packages for madOS with two flavors:
+Linux kernel packages for madOS with one generic zen-based flavor:
 
 - `linux-mados`: broad x86_64 compatibility (Intel Atom 64-bit and newer)
-- `linux-mados-perf`: optimized flavor for newer x86_64 CPUs
 
 Both flavors are configured to support Plymouth reliably during early boot.
 
@@ -17,8 +16,6 @@ Both flavors are configured to support Plymouth reliably during early boot.
 
 - `linux-mados`
 - `linux-mados-headers`
-- `linux-mados-perf`
-- `linux-mados-perf-headers`
 
 ## Build From Source
 
@@ -33,8 +30,6 @@ makepkg -s
 
 ```bash
 sudo pacman -U ./linux-mados-*.pkg.tar.* ./linux-mados-headers-*.pkg.tar.*
-# or
-sudo pacman -U ./linux-mados-perf-*.pkg.tar.* ./linux-mados-perf-headers-*.pkg.tar.*
 ```
 
 ## Plymouth Requirements
@@ -62,7 +57,6 @@ Configuration is generated from `x86_64_defconfig` and then layered with fragmen
 
 - `config.base`: compatibility-oriented baseline
 - `config.plymouth`: early graphics and splash-related options
-- `config.perf`: additional tuning for the performance flavor
 
 This keeps the config reproducible and avoids long, stale monolithic configs.
 
@@ -76,14 +70,26 @@ GitHub Actions now validates:
 
 The smoke test confirms early boot execution path (`SMOKE_OK`) and catches hard boot regressions quickly.
 
+## Local Pre-Push Validation
+
+To avoid spending GitHub Actions minutes on preventable failures, this repository includes local checks:
+
+- `.git/hooks/pre-push` runs `scripts/precommit-build-check.sh` before any push.
+- The script runs `makepkg -s --noconfirm --nopackage` and then validates key config symbols.
+
+Useful overrides:
+
+- Skip once: `MADOS_SKIP_PREPUSH_BUILD=1 git push`
+- Custom makepkg flags: `MADOS_PRECOMMIT_MAKEPKG_FLAGS='--noconfirm --noextract --nopackage' git push`
+
 ## Troubleshooting
 
 - No splash shown:
   - Verify `HOOKS` contain `kms` and `plymouth`
   - Verify kernel cmdline includes `splash`
   - Rebuild initramfs with `mkinitcpio -P`
-- Older hardware fails to boot with perf flavor:
-  - Switch to `linux-mados` compatibility flavor
+- Hardware-specific issues:
+  - Verify firmware, initramfs hooks, and bootloader configuration first
 
 ## Credits
 

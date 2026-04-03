@@ -51,40 +51,13 @@ jobs:
 
       - name: Validate key config symbols
         run: |
-          set -eu
-          compat_cfg="src/build-compat/.config"
-          perf_cfg="src/build-perf/.config"
-
-          if [ ! -f "$compat_cfg" ] || [ ! -f "$perf_cfg" ]; then
-            echo "Could not find generated configs under src/build-*"
-            exit 1
-          fi
-
-          check_cfg() {
-            cfg="$1"
-            pattern="$2"
-            message="$3"
-            if ! grep -Eq "$pattern" "$cfg"; then
-              echo "Validation failed: $message"
-              echo "Pattern: $pattern"
-              echo "Config: $cfg"
-              exit 1
-            fi
-          }
-
-          # Compatibility flavor: Plymouth/early graphics path.
-          check_cfg "$compat_cfg" '^CONFIG_DRM_SIMPLEDRM=y$' 'CONFIG_DRM_SIMPLEDRM must be enabled in compat flavor'
-          check_cfg "$compat_cfg" '^CONFIG_FRAMEBUFFER_CONSOLE=y$' 'CONFIG_FRAMEBUFFER_CONSOLE must be enabled in compat flavor'
-
-          # Perf flavor: ensure Plymouth path + basic performance options.
-          check_cfg "$perf_cfg" '^CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y$' 'CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE must be enabled in perf flavor'
-          check_cfg "$perf_cfg" '^CONFIG_DRM_SIMPLEDRM=y$' 'CONFIG_DRM_SIMPLEDRM must be enabled in perf flavor'
+          ./scripts/validate-kernel-config.sh src/build-generic/.config
 
       - name: Collect output packages
         run: |
           mkdir -p /tmp/artifacts
           cp -v ./*.pkg.tar.* /tmp/artifacts/
-          cp -v src/build-compat/arch/x86/boot/bzImage /tmp/artifacts/bzImage-linux-mados
+          cp -v src/build-generic/arch/x86/boot/bzImage /tmp/artifacts/bzImage-linux-mados
           ls -lh /tmp/artifacts
 
       - name: Upload Release

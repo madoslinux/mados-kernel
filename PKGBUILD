@@ -2,8 +2,14 @@
 # Maintainer: madOS Team
 
 pkgbase=linux-mados
+pkgname=(
+  linux-mados
+  linux-mados-headers
+  linux-mados-perf
+  linux-mados-perf-headers
+)
 pkgrel=1
-pkgver=6.19.10.zen1-1
+pkgver=6.19.10.zen1
 _kernelver=6.19.10-zen1
 pkgdesc="madOS kernels: broad-compat and performance flavors with Plymouth-ready defaults"
 url="https://github.com/madoslinux/mados-kernel"

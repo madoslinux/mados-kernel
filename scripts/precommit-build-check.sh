@@ -23,7 +23,7 @@ if command -v pacman >/dev/null 2>&1; then
   fi
 fi
 
-printf 'Running strict local kernel build check with makepkg -s --noconfirm -f\n'
-makepkg -s --noconfirm -f </dev/null
+printf 'Running strict local kernel build check with makepkg -s --noconfirm -f -C\n'
+makepkg -s --noconfirm -f -C </dev/null
 
 "$repo_root/scripts/validate-kernel-config.sh" "$repo_root/src/build-generic/.config"

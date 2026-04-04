@@ -38,5 +38,7 @@ check_cfg '^CONFIG_EXT4_FS=y$' 'CONFIG_EXT4_FS must be built-in for common root 
 check_cfg '^CONFIG_VFAT_FS=y$' 'CONFIG_VFAT_FS must be built-in for EFI system partitions'
 check_cfg '^CONFIG_ISO9660_FS=y$' 'CONFIG_ISO9660_FS must be built-in for ISO/live media paths'
 check_cfg '^CONFIG_SQUASHFS=y$' 'CONFIG_SQUASHFS must be built-in for live media support'
+check_cfg '^CONFIG_ZSMALLOC=m$' 'CONFIG_ZSMALLOC should be enabled as module for zram support'
+check_cfg '^CONFIG_ZRAM=m$' 'CONFIG_ZRAM should be enabled as module'
 
 printf 'Kernel config validation passed: %s\n' "$cfg_file"

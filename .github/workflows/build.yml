@@ -47,6 +47,7 @@ jobs:
 
       - name: Build packages with makepkg
         run: |
+          rm -f ./*.pkg.tar.zst
           su builder -c "cd '$GITHUB_WORKSPACE' && makepkg -s --noconfirm"
 
       - name: Validate key config symbols

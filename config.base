@@ -38,6 +38,11 @@ CONFIG_ZRAM_BACKEND_DEFLATE=y
 CONFIG_ZRAM_DEF_COMP_ZSTD=y
 # CONFIG_ZRAM_DEF_COMP_LZORLE is not set
 
+# LZ4 compression support (required for mkinitcpio module autodetection)
+CONFIG_LZ4_COMPRESS=y
+CONFIG_LZ4_DECOMPRESS=y
+CONFIG_CRYPTO_LZ4=y
+
 # Common boot paths
 CONFIG_EFI=y
 CONFIG_EFI_STUB=y

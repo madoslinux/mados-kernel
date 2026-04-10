@@ -40,6 +40,8 @@ check_cfg '^CONFIG_ISO9660_FS=y$' 'CONFIG_ISO9660_FS must be built-in for ISO/li
 check_cfg '^CONFIG_SQUASHFS=y$' 'CONFIG_SQUASHFS must be built-in for live media support'
 check_cfg '^CONFIG_ZSMALLOC=m$' 'CONFIG_ZSMALLOC should be enabled as module for zram support'
 check_cfg '^CONFIG_ZRAM=m$' 'CONFIG_ZRAM should be enabled as module'
+check_cfg '^CONFIG_LZ4_COMPRESS=y$' 'CONFIG_LZ4_COMPRESS must be enabled for LZ4 compression support'
+check_cfg '^CONFIG_CRYPTO_LZ4=y$' 'CONFIG_CRYPTO_LZ4 must be enabled for crypto LZ4 module'
 
 check_cfg '^CONFIG_CFG80211=m$' 'CONFIG_CFG80211 should be enabled as module for Wi-Fi stack support'
 check_cfg '^CONFIG_MAC80211=m$' 'CONFIG_MAC80211 should be enabled as module for Wi-Fi stack support'
